@@ -13,7 +13,8 @@ const anthropicService = AnthropicServiceFactory.create(
   {
     includeExamples: true,
     includeChainOfThought: true,
-    validateSql: true
+    validateSql: true,
+    forceRealMode: true // Force real mode to avoid using mock client
   }
 );
 

@@ -18,6 +18,7 @@ class AnthropicServiceFactory {
    * @param {string} config.anthropic.model - Anthropic model to use
    * @param {Object} options - Additional options
    * @param {boolean} options.forceMockMode - Force mock mode even if API key is provided
+   * @param {boolean} options.forceRealMode - Force real mode even if API key is not provided (for testing)
    * @param {boolean} options.includeExamples - Whether to include examples in prompts
    * @param {boolean} options.includeChainOfThought - Whether to include chain-of-thought reasoning
    * @param {boolean} options.validateSql - Whether to validate SQL queries
@@ -26,6 +27,7 @@ class AnthropicServiceFactory {
   static create(config, options = {}) {
     logger.debug('Creating AnthropicService instance', {
       forceMockMode: options.forceMockMode,
+      forceRealMode: options.forceRealMode,
       includeExamples: options.includeExamples,
       includeChainOfThought: options.includeChainOfThought,
       validateSql: options.validateSql
@@ -48,9 +50,12 @@ class AnthropicServiceFactory {
     const model = anthropicConfig.model || 'claude-3-opus-20240229';
 
     // Determine if we should use mock mode
-    const useMockMode = options.forceMockMode ||
+    // If forceRealMode is true, we'll use the real client even if the API key is not provided
+    const useMockMode = options.forceRealMode ? false : (
+      options.forceMockMode ||
       !apiKey ||
-      apiKey === 'your_anthropic_api_key_here';
+      apiKey === 'your_anthropic_api_key_here'
+    );
 
     // Create the appropriate client
     let client;
