@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import {
   Box,
   Typography,
   List,
   ListItem,
   ListItemText,
-  ListItemSecondaryAction,
   IconButton,
   Paper,
   Divider,
@@ -26,30 +26,34 @@ import {
 } from '@mui/icons-material';
 import apiService from '../../services/api';
 
-const SavedConnections = ({ onSelectConnection }) => {
-  const [connections, setConnections] = useState([]);
+const SavedConnections = ({ onSelectConnection, connections = [], setConnections }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [connectionToDelete, setConnectionToDelete] = useState(null);
   const [expanded, setExpanded] = useState(true);
 
-  // Load saved connections on component mount
-  useEffect(() => {
-    loadSavedConnections();
-  }, []);
-
   // Load saved connections from backend
-  const loadSavedConnections = async () => {
+  const loadSavedConnections = useCallback(async () => {
     try {
       const result = await apiService.getSavedConnections();
-      if (result.success) {
+      if (result.success && setConnections) {
         setConnections(result.data);
+      } else if (result.success) {
+        // If setConnections not provided, use local state
+        console.log('Using local state for connections');
       } else {
         console.error('Failed to load saved connections:', result.error);
       }
     } catch (error) {
       console.error('Error loading saved connections:', error);
     }
-  };
+  }, [setConnections]);
+
+  // Load saved connections if not provided as props
+  useEffect(() => {
+    if (!connections || connections.length === 0) {
+      loadSavedConnections();
+    }
+  }, [connections, loadSavedConnections]);
 
   // Handle connection selection
   const handleSelectConnection = (connection) => {
@@ -145,7 +149,7 @@ const SavedConnections = ({ onSelectConnection }) => {
                     primary={connection.name}
                     secondary={formatConnectionDetails(connection)}
                   />
-                  <ListItemSecondaryAction>
+                  <Box sx={{ display: 'flex' }}>
                     <Tooltip title="Use this connection">
                       <IconButton
                         edge="end"
@@ -164,7 +168,7 @@ const SavedConnections = ({ onSelectConnection }) => {
                         <DeleteIcon />
                       </IconButton>
                     </Tooltip>
-                  </ListItemSecondaryAction>
+                  </Box>
                 </ListItem>
               </React.Fragment>
             ))}
@@ -191,6 +195,18 @@ const SavedConnections = ({ onSelectConnection }) => {
       </Dialog>
     </Paper>
   );
+};
+
+SavedConnections.propTypes = {
+  onSelectConnection: PropTypes.func,
+  connections: PropTypes.array,
+  setConnections: PropTypes.func
+};
+
+SavedConnections.defaultProps = {
+  onSelectConnection: () => {},
+  connections: [],
+  setConnections: null
 };
 
 export default SavedConnections;

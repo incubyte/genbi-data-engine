@@ -15,7 +15,7 @@ import {
   PictureAsPdf as PdfIcon
 } from '@mui/icons-material';
 
-const ExportOptions = ({ data, query }) => {
+const ExportOptions = ({ data }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [notification, setNotification] = useState({
     open: false,
@@ -39,14 +39,14 @@ const ExportOptions = ({ data, query }) => {
       if (!data || data.length === 0) {
         throw new Error('No data to export');
       }
-      
+
       // Get column headers
       const headers = Object.keys(data[0]);
-      
+
       // Create CSV content
       const csvContent = [
         headers.join(','), // Header row
-        ...data.map(row => 
+        ...data.map(row =>
           headers.map(header => {
             const value = row[header];
             // Handle null, undefined, and quotes in strings
@@ -60,7 +60,7 @@ const ExportOptions = ({ data, query }) => {
           }).join(',')
         )
       ].join('\\n');
-      
+
       // Create a blob and download link
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -71,7 +71,7 @@ const ExportOptions = ({ data, query }) => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
+
       setNotification({
         open: true,
         message: 'CSV file downloaded successfully',
@@ -84,7 +84,7 @@ const ExportOptions = ({ data, query }) => {
         severity: 'error'
       });
     }
-    
+
     handleClose();
   };
 
@@ -103,7 +103,7 @@ const ExportOptions = ({ data, query }) => {
         severity: 'error'
       });
     }
-    
+
     handleClose();
   };
 
@@ -125,7 +125,7 @@ const ExportOptions = ({ data, query }) => {
       >
         Export
       </Button>
-      
+
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
@@ -144,15 +144,15 @@ const ExportOptions = ({ data, query }) => {
           <ListItemText>Export as PDF</ListItemText>
         </MenuItem>
       </Menu>
-      
+
       {/* Notification Snackbar */}
       <Snackbar
         open={notification.open}
         autoHideDuration={6000}
         onClose={handleCloseNotification}
       >
-        <Alert 
-          onClose={handleCloseNotification} 
+        <Alert
+          onClose={handleCloseNotification}
           severity={notification.severity}
           sx={{ width: '100%' }}
         >
