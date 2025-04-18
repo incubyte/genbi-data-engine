@@ -1,7 +1,8 @@
-const { Pool } = require('pg');
 const logger = require('../../utils/logger');
 const { ApiError } = require('../../utils/errorHandler');
 const BaseDatabaseService = require('./baseDatabaseService');
+const connectionPoolManager = require('../connectionPoolManager');
+const queryCacheService = require('../queryCacheService');
 
 /**
  * PostgreSQL database service
@@ -15,15 +16,10 @@ class PostgresService extends BaseDatabaseService {
   async connect(connectionInfo) {
     try {
       logger.info('Connecting to PostgreSQL database');
-      
-      // Create a connection pool
-      const pool = new Pool(typeof connectionInfo === 'string' ? { connectionString: connectionInfo } : connectionInfo);
-      
-      // Test the connection
-      const client = await pool.connect();
-      logger.info('Connected to the PostgreSQL database');
-      client.release();
-      
+
+      // Get connection pool from pool manager
+      const pool = await connectionPoolManager.getConnection('postgres', connectionInfo);
+
       return pool;
     } catch (error) {
       logger.error('PostgreSQL connection error:', error);
@@ -39,52 +35,52 @@ class PostgresService extends BaseDatabaseService {
   async extractSchema(pool) {
     try {
       logger.info('Extracting PostgreSQL database schema');
-      
+
       const client = await pool.connect();
-      
+
       try {
         // Get current database name
         const dbResult = await client.query('SELECT current_database()');
         const dbName = dbResult.rows[0].current_database;
-        
+
         // Get all tables in the public schema
         const tablesQuery = `
-          SELECT table_name 
-          FROM information_schema.tables 
-          WHERE table_schema = 'public' 
+          SELECT table_name
+          FROM information_schema.tables
+          WHERE table_schema = 'public'
           AND table_type = 'BASE TABLE'
         `;
         const tablesResult = await client.query(tablesQuery);
-        
+
         const schema = {};
-        
+
         // For each table, get its columns and constraints
         for (const table of tablesResult.rows) {
           const tableName = table.table_name;
-          
+
           // Get table columns
           const columnsQuery = `
-            SELECT 
-              column_name, 
-              data_type, 
-              is_nullable, 
+            SELECT
+              column_name,
+              data_type,
+              is_nullable,
               column_default,
               (SELECT EXISTS (
-                SELECT 1 
+                SELECT 1
                 FROM information_schema.table_constraints tc
-                JOIN information_schema.constraint_column_usage ccu 
+                JOIN information_schema.constraint_column_usage ccu
                   ON tc.constraint_name = ccu.constraint_name
                 WHERE tc.constraint_type = 'PRIMARY KEY'
                   AND tc.table_name = c.table_name
                   AND ccu.column_name = c.column_name
               )) as is_primary_key
             FROM information_schema.columns c
-            WHERE table_schema = 'public' 
+            WHERE table_schema = 'public'
             AND table_name = $1
             ORDER BY ordinal_position
           `;
           const columnsResult = await client.query(columnsQuery, [tableName]);
-          
+
           // Get foreign keys
           const foreignKeysQuery = `
             SELECT
@@ -105,7 +101,7 @@ class PostgresService extends BaseDatabaseService {
               AND tc.table_name = $1
           `;
           const foreignKeysResult = await client.query(foreignKeysQuery, [tableName]);
-          
+
           // Get indexes
           const indexesQuery = `
             SELECT
@@ -120,7 +116,7 @@ class PostgresService extends BaseDatabaseService {
               AND t.relkind = 'r'
           `;
           const indexesResult = await client.query(indexesQuery, [tableName]);
-          
+
           schema[tableName] = {
             columns: columnsResult.rows.map(col => ({
               name: col.column_name,
@@ -143,7 +139,7 @@ class PostgresService extends BaseDatabaseService {
             }))
           };
         }
-        
+
         logger.info('PostgreSQL schema extraction complete');
         return schema;
       } finally {
@@ -160,19 +156,45 @@ class PostgresService extends BaseDatabaseService {
    * @param {Pool} pool - Database connection pool
    * @param {string} query - SQL query to execute
    * @param {Array} params - Query parameters
+   * @param {Object} options - Query options
+   * @param {boolean} options.useCache - Whether to use the query cache
+   * @param {string} options.connectionId - Connection ID for cache key
    * @returns {Promise<Array>} - Query results
    */
-  async executeQuery(pool, query, params = []) {
+  async executeQuery(pool, query, params = [], options = {}) {
     try {
+      const { useCache = true, connectionId = '' } = options;
+
+      // Check if query is cacheable and we should use cache
+      const isCacheable = useCache && this.isCacheableQuery(query);
+
+      // Try to get from cache first
+      if (isCacheable) {
+        const cachedResults = queryCacheService.get(query, params, connectionId);
+        if (cachedResults) {
+          logger.info(`Using cached results for PostgreSQL query: ${query}`);
+          return cachedResults;
+        }
+      }
+
+      // Execute the query
       logger.info(`Executing PostgreSQL query: ${query}`);
       logger.debug('Query parameters:', params);
-      
+
       const client = await pool.connect();
-      
+
       try {
+        const startTime = Date.now();
         const result = await client.query(query, params);
-        logger.info(`PostgreSQL query executed successfully, returned ${result.rows.length} rows`);
-        
+        const executionTime = Date.now() - startTime;
+
+        logger.info(`PostgreSQL query executed successfully in ${executionTime}ms, returned ${result.rows.length} rows`);
+
+        // Cache the results if cacheable
+        if (isCacheable) {
+          queryCacheService.set(query, params, result.rows, connectionId);
+        }
+
         return result.rows;
       } finally {
         client.release();
@@ -186,15 +208,16 @@ class PostgresService extends BaseDatabaseService {
   /**
    * Close the PostgreSQL database connection pool
    * @param {Pool} pool - Database connection pool
+   * @param {string|Object} connectionInfo - Connection info used to create the pool
    */
-  closeConnection(pool) {
+  closeConnection(pool, connectionInfo) {
     if (pool) {
-      pool.end()
-        .then(() => logger.info('PostgreSQL database connection pool closed'))
-        .catch(err => logger.error('Error closing PostgreSQL database connection pool:', err));
+      // Release connection back to the pool
+      connectionPoolManager.releaseConnection('postgres', pool);
+      logger.debug('PostgreSQL database connection released back to pool');
     }
   }
-  
+
   /**
    * Get the database type
    * @returns {string} - Database type

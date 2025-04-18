@@ -2,6 +2,21 @@
 
 GenBI is an AI-powered Business Intelligence platform that turns natural language questions into powerful analytics. It consists of a Node.js backend API that interfaces with Anthropic's API to generate SQL queries from natural language, and a React frontend that provides a user-friendly interface for connecting to databases and querying them.
 
+## Table of Contents
+
+- [Project Structure](#project-structure)
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [API Endpoints](#api-endpoints)
+- [Testing](#testing)
+- [Mock Mode](#mock-mode)
+- [Frontend Usage Workflow](#frontend-usage-workflow)
+- [Error Handling](#error-handling)
+- [Security](#security)
+- [Documentation](#documentation)
+- [License](#license)
+
 ## Project Structure
 
 This project is organized into two main components:
@@ -225,6 +240,14 @@ The server includes comprehensive error handling for:
 - Uses Helmet for security headers
 - Prevents SQL injection through parameterized queries
 - Stores API keys in environment variables
+
+## Documentation
+
+Detailed documentation is available in the `docs` directory:
+
+- [API Documentation](docs/api-documentation.md): Documentation for the REST API
+- [User Guide](docs/user-guide.md): Guide for end users
+- [Developer Guide](docs/developer-guide.md): Guide for developers
 
 ## License
 

@@ -1,6 +1,14 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3000/api';
+// Configure the API URL based on the environment
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+console.log('Using API URL:', API_URL);
+
+// Configure Axios defaults
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+axios.defaults.headers.common['Accept'] = 'application/json';
+axios.defaults.withCredentials = true; // Include cookies in cross-site requests
 
 /**
  * API service for communicating with the backend
@@ -13,18 +21,31 @@ class ApiService {
    */
   async testConnection(connectionInfo) {
     try {
+      console.log('Testing connection with:', { ...connectionInfo, connection: connectionInfo.type === 'sqlite' ? connectionInfo.connection : '***' });
+
       // For testing connection, we'll use a simple query that should work on any database
       // This query is specifically handled in the backend to avoid table-specific operations
-      const response = await axios.post(`${API_URL}/query`, {
+      const url = `${API_URL}/query`;
+      console.log('Making API request to:', url);
+
+      const response = await axios.post(url, {
         userQuery: 'Show me the first row of any table - CONNECTION TEST',
         connection: connectionInfo
       });
 
+      console.log('API response:', response.data);
       return {
         success: true,
         data: response.data
       };
     } catch (error) {
+      console.error('API Error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+
       return {
         success: false,
         error: error.response?.data?.message || error.message
@@ -40,16 +61,30 @@ class ApiService {
    */
   async processQuery(userQuery, connectionInfo) {
     try {
-      const response = await axios.post(`${API_URL}/query`, {
+      console.log('Processing query:', userQuery);
+      console.log('Connection info:', { ...connectionInfo, connection: connectionInfo.type === 'sqlite' ? connectionInfo.connection : '***' });
+
+      const url = `${API_URL}/query`;
+      console.log('Making API request to:', url);
+
+      const response = await axios.post(url, {
         userQuery,
         connection: connectionInfo
       });
 
+      console.log('API response:', response.data);
       return {
         success: true,
         data: response.data.data
       };
     } catch (error) {
+      console.error('API Error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+
       return {
         success: false,
         error: error.response?.data?.message || error.message

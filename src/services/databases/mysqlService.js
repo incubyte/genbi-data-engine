@@ -1,7 +1,8 @@
-const mysql = require('mysql2/promise');
 const logger = require('../../utils/logger');
 const { ApiError } = require('../../utils/errorHandler');
 const BaseDatabaseService = require('./baseDatabaseService');
+const connectionPoolManager = require('../connectionPoolManager');
+const queryCacheService = require('../queryCacheService');
 
 /**
  * MySQL database service
@@ -16,33 +17,8 @@ class MySQLService extends BaseDatabaseService {
     try {
       logger.info('Connecting to MySQL database');
 
-      // Parse connection string if provided as string
-      let config = connectionInfo;
-      if (typeof connectionInfo === 'string') {
-        // Parse MySQL connection string (mysql://username:password@hostname:port/database)
-        const url = new URL(connectionInfo);
-        config = {
-          host: url.hostname,
-          port: url.port || 3306,
-          user: url.username,
-          password: url.password,
-          database: url.pathname.substring(1), // Remove leading slash
-          ssl: url.searchParams.get('ssl') === 'true' ? {} : undefined
-        };
-      }
-
-      // Create a connection pool
-      const pool = mysql.createPool({
-        ...config,
-        waitForConnections: true,
-        connectionLimit: 10,
-        queueLimit: 0
-      });
-
-      // Test the connection
-      const connection = await pool.getConnection();
-      logger.info('Connected to the MySQL database');
-      connection.release();
+      // Get connection pool from pool manager
+      const pool = await connectionPoolManager.getConnection('mysql', connectionInfo);
 
       return pool;
     } catch (error) {
@@ -172,18 +148,44 @@ class MySQLService extends BaseDatabaseService {
    * @param {Pool} pool - Database connection pool
    * @param {string} query - SQL query to execute
    * @param {Array} params - Query parameters
+   * @param {Object} options - Query options
+   * @param {boolean} options.useCache - Whether to use the query cache
+   * @param {string} options.connectionId - Connection ID for cache key
    * @returns {Promise<Array>} - Query results
    */
-  async executeQuery(pool, query, params = []) {
+  async executeQuery(pool, query, params = [], options = {}) {
     try {
+      const { useCache = true, connectionId = '' } = options;
+
+      // Check if query is cacheable and we should use cache
+      const isCacheable = useCache && this.isCacheableQuery(query);
+
+      // Try to get from cache first
+      if (isCacheable) {
+        const cachedResults = queryCacheService.get(query, params, connectionId);
+        if (cachedResults) {
+          logger.info(`Using cached results for MySQL query: ${query}`);
+          return cachedResults;
+        }
+      }
+
+      // Execute the query
       logger.info(`Executing MySQL query: ${query}`);
       logger.debug('Query parameters:', params);
 
       const connection = await pool.getConnection();
 
       try {
+        const startTime = Date.now();
         const [rows] = await connection.query(query, params);
-        logger.info(`MySQL query executed successfully, returned ${rows.length} rows`);
+        const executionTime = Date.now() - startTime;
+
+        logger.info(`MySQL query executed successfully in ${executionTime}ms, returned ${rows.length} rows`);
+
+        // Cache the results if cacheable
+        if (isCacheable) {
+          queryCacheService.set(query, params, rows, connectionId);
+        }
 
         return rows;
       } finally {
@@ -198,12 +200,13 @@ class MySQLService extends BaseDatabaseService {
   /**
    * Close the MySQL database connection pool
    * @param {Pool} pool - Database connection pool
+   * @param {string|Object} connectionInfo - Connection info used to create the pool
    */
-  closeConnection(pool) {
+  closeConnection(pool, connectionInfo) {
     if (pool) {
-      pool.end()
-        .then(() => logger.info('MySQL database connection pool closed'))
-        .catch(err => logger.error('Error closing MySQL database connection pool:', err));
+      // Release connection back to the pool
+      connectionPoolManager.releaseConnection('mysql', pool);
+      logger.debug('MySQL database connection released back to pool');
     }
   }
 
