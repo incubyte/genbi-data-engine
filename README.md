@@ -41,8 +41,10 @@ This project is organized into two main components:
 ### Frontend
 - User-friendly interface for database connections
 - Natural language query interface with suggested examples
-- Results display with tabbed views for data, SQL, and explanations
-- Export functionality for query results
+- Results display with tabbed views for data, visualizations, and SQL
+- Smart data visualization system that automatically selects appropriate chart types
+- Customizable charts with interactive controls
+- Export functionality for query results and visualizations
 - Saved connections and queries management
 - Responsive design for both desktop and mobile use
 
@@ -227,8 +229,10 @@ If you don't have an Anthropic API key, the server will run in mock mode, which 
 
 3. **View Results**:
    - See the data in a tabular format
+   - Explore automatically generated visualizations
+   - Customize charts to better represent your data
    - View the generated SQL query
-   - Export results to CSV or PDF
+   - Export results to CSV and visualizations to PNG/SVG
 
 ## Error Handling
 

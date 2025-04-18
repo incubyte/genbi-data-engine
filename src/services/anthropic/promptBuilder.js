@@ -48,7 +48,7 @@ class PromptBuilder {
     if (this.includeChainOfThought) {
       prompt += this.getChainOfThoughtInstructions();
     }
-    
+    logger.info('SQL generation prompt built', { prompt });
     return prompt;
   }
 
