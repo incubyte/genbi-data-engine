@@ -1,5 +1,6 @@
 const schemaExtractor = require('./src/services/anthropic/schemaExtractor');
 const logger = require('./src/utils/logger');
+const Anthropic = require('@anthropic-ai/sdk');
 
 // Sample large schema for testing
 const testSchema = {
@@ -135,19 +136,33 @@ console.log("\nSchema Extractor Test Results:");
 console.log("==============================\n");
 console.log(`Total tables in schema: ${Object.keys(testSchema).length}\n`);
 
-testQueries.forEach(query => {
-  console.log(`Query: "${query}"`);
-  
-  // Extract relevant schema with default options
-  const result = schemaExtractor.extractRelevantSchema(testSchema, query, {
-    maxTables: 5,
-    includeForeignKeys: true
-  });
-  
-  // Log the included tables
-  console.log(`Selected tables (${Object.keys(result).length}): ${Object.keys(result).join(', ')}`);
-  console.log("------------------------------\n");
-});
+// Use async function to handle promises
+async function runTests() {
+  for (const query of testQueries) {
+    console.log(`Query: "${query}"`);
 
-// Exit the process
-process.exit(0);
+    try {
+      // Extract relevant schema with default options
+      const result = await schemaExtractor.extractRelevantSchema(testSchema, query, {
+        maxTables: 5,
+        includeForeignKeys: true
+      });
+
+      // Log the included tables
+      console.log(`Selected tables (${Object.keys(result).length}): ${Object.keys(result).join(', ')}`);
+    } catch (error) {
+      console.error(`Error processing query "${query}": ${error.message}`);
+    }
+
+    console.log("------------------------------\n");
+  }
+
+  // Exit the process
+  process.exit(0);
+}
+
+// Run the tests
+runTests().catch(error => {
+  console.error('Error running tests:', error);
+  process.exit(1);
+});

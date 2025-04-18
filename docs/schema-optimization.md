@@ -16,22 +16,19 @@ Our solution intelligently extracts only the most relevant portions of the schem
 
 The process follows these steps:
 
-1. **Query Analysis**: Parse the user query and extract key terms
-2. **Table Scoring**: Score each table based on its relevance to the query:
-   - Direct name matches (table or column names appear in the query)
-   - Semantic relevance (table purpose relates to query intent)
-   - Common data elements (dates, prices, quantities, etc. mentioned in query)
-3. **Relationship Preservation**: Include tables connected through foreign keys
-4. **Schema Reduction**: Select only the highest-scoring tables up to the configured limit
-5. **Optimized Prompt**: Generate the prompt with this reduced schema
+1. **Query Analysis**: Send the user query and full schema to Anthropic's Claude API
+2. **AI-Powered Selection**: Claude analyzes the query and schema to identify the most relevant tables
+3. **Relationship Preservation**: Include tables connected through foreign keys when specified
+4. **Schema Reduction**: Return only the relevant tables up to the configured limit
+5. **Optimized Prompt**: Generate the SQL generation prompt with this reduced schema
 
 ## Implementation
 
 The feature is implemented in the `schemaExtractor.js` file, which provides the `extractRelevantSchema` method:
 
 ```javascript
-// Extract relevant schema portions based on user query
-extractRelevantSchema(schema, userQuery, options = {})
+// Extract relevant schema portions based on user query using Anthropic API
+async extractRelevantSchema(schema, userQuery, options = {})
 ```
 
 ### Key Configuration Options
@@ -50,14 +47,14 @@ async generateSqlQuery(userQuery, schema, dbType, options = {}) {
   const optimizeSchema = options.optimizeSchema !== false;
   const schemaSize = Object.keys(schema).length;
   let optimizedSchema = schema;
-  
+
   if (optimizeSchema && schemaSize > 10) {
-    optimizedSchema = schemaExtractor.extractRelevantSchema(schema, userQuery, {
+    optimizedSchema = await schemaExtractor.extractRelevantSchema(schema, userQuery, {
       maxTables: options.maxTables || 20,
       includeForeignKeys: true
     });
   }
-  
+
   // Build prompt with optimized schema
   // ...
 }
@@ -77,8 +74,9 @@ Testing with large schemas shows significant improvements:
 
 Planned enhancements include:
 
-1. **Semantic Analysis**: Improve relevance scoring using more advanced NLP techniques
+1. **Prompt Refinement**: Optimize the prompts sent to Claude for better table selection
 2. **Query History**: Consider previous queries for context
 3. **Schema Metadata**: Leverage database documentation and comments
 4. **Adaptive Sizing**: Dynamically adjust maxTables based on query complexity
 5. **User Feedback**: Incorporate user feedback to improve table selection
+6. **Caching**: Cache results for similar queries to reduce API calls

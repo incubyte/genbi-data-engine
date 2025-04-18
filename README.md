@@ -261,12 +261,12 @@ Detailed documentation is available in the `docs` directory:
 
 When working with large database schemas, GenBI automatically optimizes prompts sent to the LLM by:
 
-1. Analyzing the natural language query to identify relevant tables and columns
-2. Scoring tables based on their relevance to the query:
-   - Direct matches between query terms and table/column names
-   - Semantic relevance of table contents to the query
-   - Relationship analysis through foreign keys
-3. Selecting the most relevant tables to include in the prompt
+1. Sending the user query and full schema to Anthropic's Claude API
+2. Using Claude's intelligence to identify the most relevant tables:
+   - Tables directly related to the query intent
+   - Tables with semantic relationships to the query
+   - Tables connected through foreign key relationships
+3. Selecting only the relevant tables to include in the SQL generation prompt
 4. Maintaining relationship integrity by including related tables
 
 This optimization improves:

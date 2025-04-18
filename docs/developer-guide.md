@@ -187,17 +187,17 @@ The backend uses the Anthropic Claude API to convert natural language queries to
 
 #### Schema Optimization
 
-For large database schemas, the application includes a schema extractor that identifies relevant tables based on the user's natural language query. This helps optimize prompt size and improve response quality.
+For large database schemas, the application includes a schema extractor that uses Anthropic's Claude API to identify relevant tables based on the user's natural language query. This helps optimize prompt size and improve response quality.
 
-The schema extractor analyzes the user's query and scores tables based on relevance:
-- Direct matches with table/column names
-- Semantic relevance to query keywords
-- Foreign key relationships between tables
+The schema extractor sends the user query and full schema to Claude, which analyzes them and returns the most relevant tables:
+- Identifies tables directly related to the query intent
+- Understands semantic relationships between tables
+- Includes tables connected through foreign keys when specified
 
 To customize the schema extraction:
 
 1. Modify the `schemaExtractor.js` file in `src/services/anthropic/`
-2. Adjust scoring weights and relevance logic in the `extractRelevantSchema` method
+2. Adjust the prompt in the `_buildSchemaExtractionPrompt` method
 3. Update the maximum number of tables or other configuration options
 
 #### Modifying NLP Processing
@@ -216,14 +216,14 @@ async generateSqlQuery(userQuery, schema, dbType, options = {}) {
   const optimizeSchema = options.optimizeSchema !== false;
   const schemaSize = Object.keys(schema).length;
   let optimizedSchema = schema;
-  
+
   if (optimizeSchema && schemaSize > 10) {
-    optimizedSchema = schemaExtractor.extractRelevantSchema(schema, userQuery, {
+    optimizedSchema = await schemaExtractor.extractRelevantSchema(schema, userQuery, {
       maxTables: options.maxTables || 20,
       includeForeignKeys: true
     });
   }
-  
+
   // Generate SQL with optimized schema
   // ...
 }

@@ -1,12 +1,33 @@
 const logger = require('../../utils/logger');
+const config = require('../../config/config');
+const Anthropic = require('@anthropic-ai/sdk');
 
 /**
  * Utility for extracting relevant schema information based on user queries
  * This helps optimize prompt size when dealing with very large database schemas
  */
 class SchemaExtractor {
+  constructor() {
+    // Create a dedicated Anthropic client for schema extraction
+    const anthropicConfig = config.getConfig().api?.anthropic || {};
+    const apiKey = anthropicConfig.apiKey || 'dummy_key_for_testing';
+    const model = anthropicConfig.model || 'claude-3-opus-20240229';
+
+    this.anthropicClient = new Anthropic({
+      apiKey: apiKey
+    });
+
+    this.model = model;
+    this.dummyMode = !apiKey || apiKey === 'dummy_key_for_testing';
+
+    logger.info('SchemaExtractor initialized with Anthropic client', {
+      model: this.model,
+      dummyMode: this.dummyMode
+    });
+  }
+
   /**
-   * Extract relevant schema portions based on a user query
+   * Extract relevant schema portions based on a user query using Anthropic API
    * @param {Object} schema - Complete database schema
    * @param {string} userQuery - User's natural language query
    * @param {Object} options - Options for extraction
@@ -14,12 +35,12 @@ class SchemaExtractor {
    * @param {boolean} options.includeForeignKeys - Whether to include foreign key relationships (default: true)
    * @returns {Object} - Filtered schema with only relevant tables
    */
-  extractRelevantSchema(schema, userQuery, options = {}) {
+  async extractRelevantSchema(schema, userQuery, options = {}) {
     const maxTables = options.maxTables || 20;
     const includeForeignKeys = options.includeForeignKeys !== false;
 
-    logger.debug('Extracting relevant schema based on user query', { 
-      maxTables, 
+    logger.debug('Extracting relevant schema based on user query', {
+      maxTables,
       includeForeignKeys,
       schemaSize: Object.keys(schema).length
     });
@@ -30,171 +51,161 @@ class SchemaExtractor {
       return schema;
     }
 
-    // Normalize the user query for better matching
-    const normalizedQuery = userQuery.toLowerCase();
-    
-    // Split query into individual words and remove common words
-    const stopWords = new Set([
-      'a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'with', 
-      'by', 'about', 'like', 'through', 'over', 'before', 'after', 'between', 
-      'under', 'during', 'without', 'of', 'from', 'as', 'into', 'through',
-      'show', 'find', 'get', 'list', 'display', 'give', 'me', 'all', 'any',
-      'where', 'who', 'what', 'when', 'how', 'which', 'why', 'whose'
-    ]);
-    
-    const queryWords = normalizedQuery
-      .replace(/[^\w\s]/g, ' ')
-      .split(/\s+/)
-      .filter(word => word.length > 2 && !stopWords.has(word));
-    
-    logger.debug('Extracted query words', { queryWords });
+    try {
+      // Generate a prompt for schema extraction
+      const systemPrompt = this._buildSchemaExtractionPrompt(schema, maxTables, includeForeignKeys);
 
-    // Score each table based on relevance to query
-    const tableScores = new Map();
-    
-    // First pass: Direct table name matches
-    for (const tableName in schema) {
-      const normalizedTableName = tableName.toLowerCase();
-      const singularTableName = this._getSingular(normalizedTableName);
-      
-      // Score based on table name matches
-      let score = 0;
-      
-      // Exact table name match is highly relevant
-      if (normalizedQuery.includes(normalizedTableName)) {
-        score += 10;
-      }
-      
-      // Singular form match
-      if (singularTableName !== normalizedTableName && normalizedQuery.includes(singularTableName)) {
-        score += 8;
-      }
-      
-      // Check word by word matches
-      for (const word of queryWords) {
-        if (normalizedTableName.includes(word) || word.includes(normalizedTableName)) {
-          score += 5;
-        }
-        
-        if (singularTableName !== normalizedTableName && 
-            (singularTableName.includes(word) || word.includes(singularTableName))) {
-          score += 4;
-        }
-      }
-      
-      // Second pass: Column name matches
-      const columns = schema[tableName].columns;
-      for (const column of columns) {
-        const normalizedColumnName = column.name.toLowerCase();
-        
-        // Column name in query is relevant
-        if (normalizedQuery.includes(normalizedColumnName)) {
-          score += 3;
-        }
-        
-        // Column name matches a query word
-        for (const word of queryWords) {
-          if (normalizedColumnName.includes(word) || word.includes(normalizedColumnName)) {
-            score += 2;
-          }
-        }
-        
-        // Score based on column name suggestions of intent
-        const intentIndicators = {
-          'id': 0.5,
-          'name': 1,
-          'title': 1,
-          'description': 1,
-          'date': 1,
-          'time': 1,
-          'amount': 1,
-          'price': 1,
-          'cost': 1,
-          'quantity': 1,
-          'total': 1,
-          'count': 1,
-          'status': 1
+      // Create the messages array
+      const messages = [
+        { role: 'user', content: userQuery }
+      ];
+
+      // Call Anthropic API to get relevant tables
+      logger.info('Calling Anthropic API to extract relevant schema');
+
+      let response;
+      if (this.dummyMode) {
+        // If in dummy mode, return a mock response
+        logger.info('Using dummy mode for schema extraction');
+        response = {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(Object.keys(schema).slice(0, maxTables))
+          }]
         };
-        
-        for (const [indicator, weight] of Object.entries(intentIndicators)) {
-          if (normalizedColumnName.includes(indicator)) {
-            score += weight;
-          }
-        }
-      }
-      
-      tableScores.set(tableName, score);
-    }
-    
-    // Sort tables by score and select top N
-    const sortedTables = [...tableScores.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .map(entry => entry[0])
-      .slice(0, maxTables);
-    
-    logger.debug('Selected tables by relevance', { 
-      selectedTables: sortedTables,
-      scores: Object.fromEntries([...tableScores.entries()]
-        .filter(([table]) => sortedTables.includes(table)))
-    });
+      } else {
+        // Call the real Anthropic API
+        try {
+          const apiResponse = await this.anthropicClient.messages.create({
+            model: this.model,
+            max_tokens: 1000,
+            system: systemPrompt,
+            messages: messages,
+          });
 
-    // If includeForeignKeys is true, add related tables
-    const tablesWithRelations = new Set(sortedTables);
-    
-    if (includeForeignKeys) {
-      for (const tableName of sortedTables) {
-        const foreignKeys = schema[tableName].foreignKeys || [];
-        
-        for (const fk of foreignKeys) {
-          if (fk.table && !tablesWithRelations.has(fk.table)) {
-            tablesWithRelations.add(fk.table);
-            logger.debug(`Added related table through foreign key: ${fk.table} (referenced by ${tableName})`);
-          }
+          response = apiResponse;
+        } catch (apiError) {
+          logger.error('Error calling Anthropic API:', apiError);
+          // Return a mock response in case of API error
+          response = {
+            content: [{
+              type: 'text',
+              text: JSON.stringify(Object.keys(schema).slice(0, maxTables))
+            }]
+          };
         }
       }
-      
-      // Also check for tables that reference our selected tables
-      for (const tableName in schema) {
-        if (tablesWithRelations.has(tableName)) continue;
-        
-        const foreignKeys = schema[tableName].foreignKeys || [];
-        for (const fk of foreignKeys) {
-          if (fk.table && tablesWithRelations.has(fk.table)) {
-            tablesWithRelations.add(tableName);
-            logger.debug(`Added related table that references: ${tableName} (references ${fk.table})`);
-            break;
-          }
+
+      // Parse the response to get the list of relevant tables
+      const relevantTables = this._parseRelevantTablesFromResponse(response, schema);
+
+      // Build the filtered schema
+      const filteredSchema = {};
+      for (const tableName of relevantTables) {
+        if (schema[tableName]) {
+          filteredSchema[tableName] = schema[tableName];
         }
       }
+
+      logger.info(`Extracted schema with ${Object.keys(filteredSchema).length} tables from original schema with ${Object.keys(schema).length} tables`);
+
+      // If no tables were extracted, return a subset of the original schema
+      if (Object.keys(filteredSchema).length === 0) {
+        logger.warn('No tables extracted by Anthropic, falling back to returning a subset of the schema');
+        const allTables = Object.keys(schema).slice(0, maxTables);
+        for (const tableName of allTables) {
+          filteredSchema[tableName] = schema[tableName];
+        }
+      }
+
+      return filteredSchema;
+    } catch (error) {
+      logger.error('Error extracting schema with Anthropic:', error);
+
+      // Fall back to returning a subset of the schema
+      logger.warn('Falling back to returning a subset of the schema');
+      const filteredSchema = {};
+      const allTables = Object.keys(schema).slice(0, maxTables);
+      for (const tableName of allTables) {
+        filteredSchema[tableName] = schema[tableName];
+      }
+
+      return filteredSchema;
     }
-    
-    // Build the filtered schema
-    const filteredSchema = {};
-    for (const tableName of tablesWithRelations) {
-      filteredSchema[tableName] = schema[tableName];
-    }
-    
-    logger.info(`Extracted schema with ${Object.keys(filteredSchema).length} tables from original schema with ${Object.keys(schema).length} tables`);
-    
-    return filteredSchema;
   }
-  
+
   /**
-   * Get singular form of a word (very simple implementation)
-   * @param {string} word - Word to convert to singular
-   * @returns {string} - Singular form
+   * Build a system prompt for schema extraction
+   * @param {Object} schema - Complete database schema
+   * @param {number} maxTables - Maximum number of tables to include
+   * @param {boolean} includeForeignKeys - Whether to include foreign key relationships
+   * @returns {string} - System prompt for Anthropic API
    * @private
    */
-  _getSingular(word) {
-    if (word.endsWith('ies')) {
-      return word.slice(0, -3) + 'y';
-    } else if (word.endsWith('es')) {
-      return word.slice(0, -2);
-    } else if (word.endsWith('s') && !word.endsWith('ss')) {
-      return word.slice(0, -1);
-    }
-    return word;
+  _buildSchemaExtractionPrompt(schema, maxTables, includeForeignKeys) {
+    // Format the schema as a string
+    const schemaString = JSON.stringify(schema, null, 2);
+
+    return `You are an expert database analyst. Your task is to identify the most relevant tables from a database schema based on a user's natural language query.
+
+Here is the complete database schema:
+${schemaString}
+
+Your job is to:
+1. Analyze the user's query and understand what data they're looking for
+2. Examine the database schema to understand the available tables and their relationships
+3. Identify up to ${maxTables} tables that are most relevant to the user's query
+${includeForeignKeys ? '4. Include tables that have foreign key relationships with the relevant tables' : ''}
+
+Return your response as a JSON array of table names, like this: ["table1", "table2", "table3"]
+
+Do not include any explanations or additional text in your response, just the JSON array of table names.`;
   }
+
+  /**
+   * Parse the response from Anthropic API to extract relevant table names
+   * @param {Object} response - Response from Anthropic API
+   * @param {Object} schema - Complete database schema
+   * @returns {Array<string>} - Array of relevant table names
+   * @private
+   */
+  _parseRelevantTablesFromResponse(response, schema) {
+    try {
+      // Extract the text content from the response
+      const textContent = response.content[0]?.text || '';
+
+      // Try to parse the response as JSON
+      let relevantTables = [];
+
+      // Clean up the response text to extract just the JSON array
+      const jsonMatch = textContent.match(/\[\s*".*"\s*\]/s);
+      const jsonText = jsonMatch ? jsonMatch[0] : textContent;
+
+      try {
+        relevantTables = JSON.parse(jsonText);
+      } catch (jsonError) {
+        // If JSON parsing fails, try to extract table names using regex
+        logger.warn('Failed to parse JSON response, trying regex extraction', { error: jsonError.message });
+
+        const tableMatches = textContent.match(/"([^"]+)"/g);
+        if (tableMatches) {
+          relevantTables = tableMatches.map(match => match.replace(/"/g, ''));
+        }
+      }
+
+      // Filter out any table names that don't exist in the schema
+      relevantTables = relevantTables.filter(tableName => schema[tableName]);
+
+      logger.debug('Extracted relevant tables from Anthropic response', { relevantTables });
+
+      return relevantTables;
+    } catch (error) {
+      logger.error('Error parsing relevant tables from Anthropic response:', error);
+      return [];
+    }
+  }
+
+
 }
 
 module.exports = new SchemaExtractor();

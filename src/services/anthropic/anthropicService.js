@@ -47,25 +47,25 @@ class AnthropicService {
 
       logger.info('Generating SQL query and visualization recommendations from natural language');
       logger.debug('User query:', userQuery);
-      
+
       // Extract relevant schema if optimization is enabled
       const optimizeSchema = options.optimizeSchema !== false;
       const schemaSize = Object.keys(schema).length;
       let optimizedSchema = schema;
-      
+
       if (optimizeSchema && schemaSize > 10) {
         logger.info(`Large schema detected (${schemaSize} tables). Optimizing schema for prompt.`);
         const startTime = Date.now();
-        
-        optimizedSchema = schemaExtractor.extractRelevantSchema(schema, userQuery, {
+
+        optimizedSchema = await schemaExtractor.extractRelevantSchema(schema, userQuery, {
           maxTables: options.maxTables || 20,
           includeForeignKeys: true
         });
-        
+
         const extractionTime = Date.now() - startTime;
         logger.info(`Schema optimization complete. Reduced from ${schemaSize} to ${Object.keys(optimizedSchema).length} tables in ${extractionTime}ms`);
       }
-      
+
       // Build the system prompt with the optimized schema
       const systemPrompt = this.promptBuilder.buildSqlGenerationPrompt({
         schema: optimizedSchema,
@@ -83,6 +83,7 @@ class AnthropicService {
         messages,
         maxTokens: 1500 // Increased token limit to accommodate visualization recommendations
       });
+      logger.info('Received response from Anthropic API:', response);
 
       // Parse the response to extract the SQL query and visualization recommendations
       const parsedResponse = this.responseParser.parseResponse(response);
