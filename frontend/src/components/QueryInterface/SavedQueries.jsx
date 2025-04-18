@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import {
   Box,
   Typography,
   List,
   ListItem,
   ListItemText,
-  ListItemSecondaryAction,
+  // ListItemSecondaryAction is deprecated, use Box instead
   IconButton,
   Paper,
   Divider,
@@ -32,11 +33,6 @@ const SavedQueries = ({ onSelectQuery }) => {
   const [queryToDelete, setQueryToDelete] = useState(null);
   const [expanded, setExpanded] = useState(true);
 
-  // Load saved queries on component mount
-  useEffect(() => {
-    loadSavedQueries();
-  }, []);
-
   // Load saved queries from backend
   const loadSavedQueries = async () => {
     try {
@@ -50,6 +46,11 @@ const SavedQueries = ({ onSelectQuery }) => {
       console.error('Error loading saved queries:', error);
     }
   };
+
+  // Load saved queries on component mount
+  useEffect(() => {
+    loadSavedQueries();
+  }, []);
 
   // Handle query selection
   const handleSelectQuery = (query) => {
@@ -136,7 +137,7 @@ const SavedQueries = ({ onSelectQuery }) => {
                       </>
                     }
                   />
-                  <ListItemSecondaryAction>
+                  <Box sx={{ display: 'flex', position: 'absolute', right: 16 }}>
                     <Tooltip title="Run this query">
                       <IconButton
                         edge="end"
@@ -155,7 +156,7 @@ const SavedQueries = ({ onSelectQuery }) => {
                         <DeleteIcon />
                       </IconButton>
                     </Tooltip>
-                  </ListItemSecondaryAction>
+                  </Box>
                 </ListItem>
               </React.Fragment>
             ))}
@@ -182,6 +183,14 @@ const SavedQueries = ({ onSelectQuery }) => {
       </Dialog>
     </Paper>
   );
+};
+
+SavedQueries.propTypes = {
+  onSelectQuery: PropTypes.func
+};
+
+SavedQueries.defaultProps = {
+  onSelectQuery: () => {}
 };
 
 export default SavedQueries;

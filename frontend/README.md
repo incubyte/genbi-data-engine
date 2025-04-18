@@ -81,6 +81,25 @@ src/
 └── styles/                  # CSS styles
 ```
 
+### Testing
+
+The frontend uses Jest and React Testing Library for unit and integration tests.
+
+To run the tests:
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode (for development)
+npm run test:watch
+
+# Run tests with coverage report
+npm run test:coverage
+```
+
+For more details on the testing setup and best practices, see [TESTING.md](./TESTING.md).
+
 ### Adding New Database Types
 
 To add support for a new database type:

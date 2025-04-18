@@ -16,7 +16,7 @@ import {
   DialogActions
 } from '@mui/material';
 import FeedbackMessage from '../common/FeedbackMessage';
-import LoadingIndicator from '../common/LoadingIndicator';
+
 import {
   Send as SendIcon,
   Save as SaveIcon,
@@ -34,7 +34,7 @@ const EXAMPLE_QUERIES = [
   'Which products have the highest profit margin?'
 ];
 
-const QueryForm = ({ onSubmitQuery, isProcessing, initialQuery = '' }) => {
+const QueryForm = ({ onSubmitQuery, isProcessing, initialQuery = '', disabled = false }) => {
   const [query, setQuery] = useState(initialQuery);
   const [errors, setErrors] = useState({});
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
@@ -44,7 +44,8 @@ const QueryForm = ({ onSubmitQuery, isProcessing, initialQuery = '' }) => {
     message: '',
     severity: 'info'
   });
-  const [submitting, setSubmitting] = useState(false);
+  // We use isProcessing from props instead of this local state
+  // const [submitting, setSubmitting] = useState(false);
 
   // Handle query input change
   const handleQueryChange = (e) => {
@@ -68,7 +69,7 @@ const QueryForm = ({ onSubmitQuery, isProcessing, initialQuery = '' }) => {
     }
 
     // Submit query to parent component with loading state
-    setSubmitting(true);
+    // Note: isProcessing is handled by the parent component
     try {
       await onSubmitQuery(query);
     } catch (error) {
@@ -77,8 +78,6 @@ const QueryForm = ({ onSubmitQuery, isProcessing, initialQuery = '' }) => {
         message: `Error processing query: ${error.message || 'Unknown error'}`,
         severity: 'error'
       });
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -153,9 +152,10 @@ const QueryForm = ({ onSubmitQuery, isProcessing, initialQuery = '' }) => {
           value={query}
           onChange={handleQueryChange}
           error={!!errors.query}
-          helperText={errors.query}
+          helperText={errors.query || (disabled ? 'Connect to a database first to run queries' : '')}
           placeholder="e.g., Show me monthly revenue trends broken down by product category"
           sx={{ mb: 3 }}
+          disabled={disabled || isProcessing}
         />
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -180,7 +180,7 @@ const QueryForm = ({ onSubmitQuery, isProcessing, initialQuery = '' }) => {
               variant="contained"
               color="primary"
               endIcon={isProcessing ? <CircularProgress size={20} color="inherit" /> : <SendIcon />}
-              disabled={isProcessing}
+              disabled={isProcessing || disabled || !query.trim()}
             >
               {isProcessing ? 'Generating Insights...' : 'Generate Insights'}
             </Button>
@@ -188,8 +188,8 @@ const QueryForm = ({ onSubmitQuery, isProcessing, initialQuery = '' }) => {
         </Box>
 
         <Grid container spacing={1}>
-          {EXAMPLE_QUERIES.map((exampleQuery, index) => (
-            <Grid item key={index}>
+          {EXAMPLE_QUERIES.map((exampleQuery) => (
+            <Grid item key={exampleQuery}>
               <Chip
                 label={exampleQuery}
                 onClick={() => handleExampleClick(exampleQuery)}
@@ -197,6 +197,7 @@ const QueryForm = ({ onSubmitQuery, isProcessing, initialQuery = '' }) => {
                 color="primary"
                 variant="outlined"
                 sx={{ mb: 1 }}
+                disabled={disabled || isProcessing}
               />
             </Grid>
           ))}

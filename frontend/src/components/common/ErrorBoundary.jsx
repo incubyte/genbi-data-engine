@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Typography, Button, Paper } from '@mui/material';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import PropTypes from 'prop-types';
 
 /**
  * Error Boundary component to catch and display errors in the UI
@@ -9,7 +10,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { 
+    this.state = {
       hasError: false,
       error: null,
       errorInfo: null
@@ -25,7 +26,7 @@ class ErrorBoundary extends React.Component {
     // Log the error to the console
     console.error('Error caught by ErrorBoundary:', error, errorInfo);
     this.setState({ errorInfo });
-    
+
     // You could also log the error to an error reporting service
     // logErrorToService(error, errorInfo);
   }
@@ -42,45 +43,45 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       // Render fallback UI
       return (
-        <Box 
-          sx={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center', 
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
             justifyContent: 'center',
             minHeight: '300px',
             p: 3
           }}
         >
-          <Paper 
-            elevation={3} 
-            sx={{ 
-              p: 4, 
-              maxWidth: '600px', 
+          <Paper
+            elevation={3}
+            sx={{
+              p: 4,
+              maxWidth: '600px',
               textAlign: 'center',
               borderLeft: '4px solid #f44336'
             }}
           >
             <ErrorOutlineIcon color="error" sx={{ fontSize: 60, mb: 2 }} />
-            
+
             <Typography variant="h5" color="error" gutterBottom>
               Something went wrong
             </Typography>
-            
-            <Typography variant="body1" color="textSecondary" paragraph>
+
+            <Typography variant="body1" color="textSecondary" sx={{ mb: 2 }}>
               {this.state.error?.message || 'An unexpected error occurred'}
             </Typography>
-            
-            {process.env.NODE_ENV !== 'production' && this.state.errorInfo && (
+
+            {(process.env.NODE_ENV !== 'production') && this.state.errorInfo && (
               <Box sx={{ mt: 2, mb: 2, textAlign: 'left' }}>
                 <Typography variant="subtitle2" color="textSecondary" gutterBottom>
                   Error Details (Development Only):
                 </Typography>
-                <Box 
-                  component="pre" 
-                  sx={{ 
-                    p: 2, 
-                    bgcolor: '#f5f5f5', 
+                <Box
+                  component="pre"
+                  sx={{
+                    p: 2,
+                    bgcolor: '#f5f5f5',
                     borderRadius: 1,
                     overflow: 'auto',
                     fontSize: '0.8rem',
@@ -91,19 +92,19 @@ class ErrorBoundary extends React.Component {
                 </Box>
               </Box>
             )}
-            
+
             <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center', gap: 2 }}>
-              <Button 
-                variant="outlined" 
-                color="primary" 
+              <Button
+                variant="outlined"
+                color="primary"
                 onClick={this.handleReset}
                 startIcon={<RefreshIcon />}
               >
                 Try Again
               </Button>
-              <Button 
-                variant="contained" 
-                color="primary" 
+              <Button
+                variant="contained"
+                color="primary"
                 onClick={this.handleReload}
               >
                 Reload Page
@@ -118,5 +119,9 @@ class ErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
+
+ErrorBoundary.propTypes = {
+  children: PropTypes.node
+};
 
 export default ErrorBoundary;
