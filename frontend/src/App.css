@@ -1,0 +1,28 @@
+/* Custom styles for GenBI application */
+
+/* Tooltip styles */
+.MuiTooltip-tooltip {
+  font-size: 0.8rem;
+}
+
+/* Form field styles */
+.MuiFormControl-root {
+  margin-bottom: 16px;
+}
+
+/* Animation for loading */
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+.pulse-animation {
+  animation: pulse 1.5s infinite ease-in-out;
+}

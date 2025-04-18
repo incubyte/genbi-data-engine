@@ -2,16 +2,21 @@ const { spawn } = require('child_process');
 const path = require('path');
 
 // First, set up the test database
-console.log('Setting up test database...');
+console.log('Setting up SQLite test database...');
 const setupDb = spawn('node', ['test-db.js'], { stdio: 'inherit' });
+
+// Uncomment to also set up PostgreSQL test database
+// Note: This requires PostgreSQL to be installed and configured
+// console.log('Setting up PostgreSQL test database...');
+// const setupPgDb = spawn('node', ['test-postgres-db.js'], { stdio: 'inherit' });
 
 setupDb.on('close', (code) => {
   if (code !== 0) {
-    console.error(`Database setup process exited with code ${code}`);
+    console.error(`SQLite database setup process exited with code ${code}`);
     process.exit(code);
   }
 
-  console.log('Database setup complete. Starting server...');
+  console.log('SQLite database setup complete. Starting server...');
 
   // Start the server
   const server = spawn('node', ['server.js'], {

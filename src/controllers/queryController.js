@@ -1,4 +1,4 @@
-const databaseService = require('../services/databaseService');
+const databaseFactory = require('../services/databaseFactory');
 const anthropicService = require('../services/anthropicService');
 const logger = require('../utils/logger');
 const { ApiError } = require('../utils/errorHandler');
@@ -15,48 +15,57 @@ class QueryController {
    */
   async processQuery(req, res, next) {
     let db = null;
-    
+    let dbService = null;
+
     try {
       // Validate request body
-      const { userQuery, connectionString } = req.body;
-      
+      const { userQuery, connection } = req.body;
+
       if (!userQuery) {
         throw new ApiError(400, 'User query is required');
       }
-      
-      if (!connectionString) {
-        throw new ApiError(400, 'Database connection string is required');
+
+      if (!connection) {
+        throw new ApiError(400, 'Database connection information is required');
       }
-      
+
       logger.info('Processing natural language query');
-      logger.debug('Request body:', { userQuery, connectionString: '***' });
-      
+      logger.debug('Request body:', { userQuery, connection: '***' });
+
+      // Parse connection info and create appropriate database service
+      const connectionInfo = databaseFactory.parseConnectionInfo(connection);
+      dbService = databaseFactory.createDatabaseService(connectionInfo);
+
       // Connect to the database
-      db = await databaseService.connect(connectionString);
-      
+      db = await dbService.connect(connectionInfo.connection);
+
       // Extract database schema
-      const schema = await databaseService.extractSchema(db);
-      
+      const schema = await dbService.extractSchema(db);
+
+      // Get database type
+      const dbType = dbService.getDatabaseType();
+
       // Generate SQL query using Anthropic
-      const sqlQuery = await anthropicService.generateSqlQuery(userQuery, schema);
-      
+      const sqlQuery = await anthropicService.generateSqlQuery(userQuery, schema, dbType);
+
       // Execute the generated SQL query
-      const results = await databaseService.executeQuery(db, sqlQuery);
-      
+      const results = await dbService.executeQuery(db, sqlQuery);
+
       // Return the results and the generated SQL query
       res.status(200).json({
         status: 'success',
         data: {
           results,
           sqlQuery,
+          databaseType: dbType
         },
       });
     } catch (error) {
       next(error);
     } finally {
       // Close the database connection
-      if (db) {
-        databaseService.closeConnection(db);
+      if (db && dbService) {
+        dbService.closeConnection(db);
       }
     }
   }

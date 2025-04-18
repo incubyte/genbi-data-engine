@@ -6,10 +6,13 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "setup-test-db": "node test-db.js",
+    "setup-sqlite-db": "node test-db.js",
+    "setup-postgres-db": "node test-postgres-db.js",
     "test-query": "node test-query.js",
     "run-test": "node run-test.js",
-    "test": "npm run run-test"
+    "test": "npm run run-test",
+    "test:sqlite": "npm run setup-sqlite-db && npm run test-query",
+    "test:postgres": "npm run setup-postgres-db && npm run test-query"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +23,7 @@
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "helmet": "^8.1.0",
+    "pg": "^8.14.1",
     "sqlite3": "^5.1.7",
     "winston": "^3.17.0"
   },

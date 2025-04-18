@@ -6,8 +6,20 @@ async function testQuery() {
   try {
     console.log('Testing the natural language to SQL query API...');
 
-    // Database connection string
-    const connectionString = path.join(__dirname, 'test.db');
+    // Database connection configurations
+    const connections = [
+      {
+        type: 'sqlite',
+        connection: path.join(__dirname, 'test.db'),
+        label: 'SQLite'
+      },
+      // Uncomment to test with PostgreSQL
+      // {
+      //   type: 'postgres',
+      //   connection: 'postgres://username:password@localhost:5432/testdb',
+      //   label: 'PostgreSQL'
+      // }
+    ];
 
     // Example natural language queries to test
     const queries = [
@@ -18,27 +30,33 @@ async function testQuery() {
       'Which products have never been ordered?'
     ];
 
-    // Test each query
-    for (const userQuery of queries) {
-      console.log(`\nTesting query: "${userQuery}"`);
+    // Test each connection type
+    for (const conn of connections) {
+      console.log(`\n\n=== Testing with ${conn.label} database ===\n`);
 
-      // Make API request
-      const response = await axios.post('http://localhost:3000/api/query', {
-        userQuery,
-        connectionString
-      });
+      // Test each query
+      for (const userQuery of queries) {
+        console.log(`\nTesting query: "${userQuery}"`);
 
-      // Log results
-      console.log('Generated SQL:');
-      console.log(response.data.data.sqlQuery);
-      console.log('\nResults:');
-      // Limit the output to avoid overwhelming the console
-      const limitedResults = response.data.data.results.slice(0, 5);
-      console.log(JSON.stringify(limitedResults, null, 2));
-      if (response.data.data.results.length > 5) {
-        console.log(`...and ${response.data.data.results.length - 5} more rows`);
+        // Make API request
+        const response = await axios.post('http://localhost:3000/api/query', {
+          userQuery,
+          connection: conn
+        });
+
+        // Log results
+        console.log(`Database Type: ${response.data.data.databaseType}`);
+        console.log('Generated SQL:');
+        console.log(response.data.data.sqlQuery);
+        console.log('\nResults:');
+        // Limit the output to avoid overwhelming the console
+        const limitedResults = response.data.data.results.slice(0, 5);
+        console.log(JSON.stringify(limitedResults, null, 2));
+        if (response.data.data.results.length > 5) {
+          console.log(`...and ${response.data.data.results.length - 5} more rows`);
+        }
+        console.log('-'.repeat(80));
       }
-      console.log('-'.repeat(80));
     }
 
     console.log('\nAll tests completed successfully!');
