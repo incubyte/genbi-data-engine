@@ -17,7 +17,7 @@ class AnthropicService {
     this.client = client;
     this.promptBuilder = promptBuilder;
     this.responseParser = responseParser;
-    
+
     logger.info('AnthropicService initialized', {
       mockMode: this.client.isMockMode(),
       model: this.client.getModel()
@@ -25,11 +25,11 @@ class AnthropicService {
   }
 
   /**
-   * Generate a SQL query from natural language
+   * Generate a SQL query and visualization recommendations from natural language
    * @param {string} userQuery - User's natural language query
    * @param {Object} schema - Database schema
    * @param {string} dbType - Database type ('sqlite', 'postgres', or 'mysql')
-   * @returns {Promise<string>} - Generated SQL query
+   * @returns {Promise<Object>} - Object containing SQL query and visualization recommendations
    * @throws {ValidationError} - If the user query is invalid
    * @throws {ApiError} - If there is an error generating the SQL query
    */
@@ -40,35 +40,36 @@ class AnthropicService {
       if (!validation.isValid) {
         throw new ValidationError('Invalid user query', validation.errors);
       }
-      
-      logger.info('Generating SQL query from natural language');
+
+      logger.info('Generating SQL query and visualization recommendations from natural language');
       logger.debug('User query:', userQuery);
-      
+
       // Build the system prompt
       const systemPrompt = this.promptBuilder.buildSqlGenerationPrompt({
         schema,
         dbType
       });
-      
+
       // Create the messages array
       const messages = [
         { role: 'user', content: userQuery }
       ];
-      
+
       // Generate the response
       const response = await this.client.generateResponse({
         systemPrompt,
         messages,
-        maxTokens: 1000
+        maxTokens: 1500 // Increased token limit to accommodate visualization recommendations
       });
-      
-      // Parse the response to extract the SQL query
-      const sqlQuery = this.responseParser.parseResponse(response);
-      
-      logger.info('SQL query generated successfully');
-      logger.debug('Generated SQL query:', sqlQuery);
-      
-      return sqlQuery;
+
+      // Parse the response to extract the SQL query and visualization recommendations
+      const parsedResponse = this.responseParser.parseResponse(response);
+
+      logger.info('SQL query and visualization recommendations generated successfully');
+      logger.debug('Generated SQL query:', parsedResponse.sqlQuery);
+      logger.debug('Visualization recommendations:', parsedResponse.visualization);
+
+      return parsedResponse;
     } catch (error) {
       // Handle different types of errors
       if (error instanceof ValidationError) {
@@ -79,8 +80,8 @@ class AnthropicService {
         throw error;
       } else {
         // Handle other errors
-        logger.error('Error generating SQL query:', error);
-        throw new ApiError(500, `Failed to generate SQL query: ${error.message}`);
+        logger.error('Error generating SQL query and visualization recommendations:', error);
+        throw new ApiError(500, `Failed to generate SQL query and visualization recommendations: ${error.message}`);
       }
     }
   }

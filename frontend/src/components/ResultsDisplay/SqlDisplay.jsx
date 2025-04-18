@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Box, Paper, Typography, Button, Snackbar, Alert } from '@mui/material';
 import { ContentCopy as CopyIcon } from '@mui/icons-material';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { materialDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { materialDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 
 const SqlDisplay = ({ sqlQuery }) => {
   const [copySuccess, setCopySuccess] = useState(false);
@@ -43,7 +43,7 @@ const SqlDisplay = ({ sqlQuery }) => {
           Copy
         </Button>
       </Box>
-      
+
       <Box sx={{ p: 0 }}>
         <SyntaxHighlighter
           language="sql"
@@ -54,15 +54,15 @@ const SqlDisplay = ({ sqlQuery }) => {
           {sqlQuery}
         </SyntaxHighlighter>
       </Box>
-      
+
       {/* Copy Success Notification */}
       <Snackbar
         open={copySuccess}
         autoHideDuration={3000}
         onClose={handleCloseNotification}
       >
-        <Alert 
-          onClose={handleCloseNotification} 
+        <Alert
+          onClose={handleCloseNotification}
           severity="success"
           sx={{ width: '100%' }}
         >

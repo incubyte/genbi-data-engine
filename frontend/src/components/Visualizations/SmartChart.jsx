@@ -28,7 +28,12 @@ import { analyzeDataForCharts, generateChartTitle } from '../../utils/chartUtils
  * Smart chart component that automatically selects the appropriate chart type
  * based on data characteristics
  */
-const SmartChart = ({ data, initialChartType = null }) => {
+const SmartChart = ({
+  data,
+  initialChartType = null,
+  recommendedConfig = null,
+  recommendationReason = null
+}) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [analysis, setAnalysis] = useState(null);
@@ -51,8 +56,30 @@ const SmartChart = ({ data, initialChartType = null }) => {
       const analysisResult = analyzeDataForCharts(data);
       setAnalysis(analysisResult);
 
-      // Set chart type based on recommendations or initial type
-      if (analysisResult.recommendedCharts.length > 0) {
+      // If we have recommended config from the API, use it to override the analysis
+      if (recommendedConfig && initialChartType) {
+        // Create a custom recommendation based on API suggestions
+        const apiRecommendation = {
+          type: initialChartType,
+          suitability: 'high',
+          config: recommendedConfig,
+          reason: recommendationReason || 'Recommended by AI based on query intent'
+        };
+
+        // Add the API recommendation to the top of the list
+        analysisResult.recommendedCharts = [
+          apiRecommendation,
+          ...analysisResult.recommendedCharts.filter(chart => chart.type !== initialChartType)
+        ];
+
+        // Update the analysis with the modified recommendations
+        setAnalysis(analysisResult);
+
+        // Set the chart type and config based on API recommendation
+        setChartType(initialChartType);
+        setChartConfig(recommendedConfig);
+      } else if (analysisResult.recommendedCharts.length > 0) {
+        // Set chart type based on analysis recommendations or initial type
         if (!chartType || !analysisResult.recommendedCharts.some(chart => chart.type === chartType)) {
           setChartType(analysisResult.recommendedCharts[0].type);
           // Initialize chart config with recommended settings
@@ -66,7 +93,7 @@ const SmartChart = ({ data, initialChartType = null }) => {
     } finally {
       setLoading(false);
     }
-  }, [data, initialChartType]);
+  }, [data, initialChartType, recommendedConfig, recommendationReason]);
 
   // Handle chart type change
   const handleChartTypeChange = (newType) => {
@@ -261,7 +288,7 @@ const SmartChart = ({ data, initialChartType = null }) => {
           Why this visualization?
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {currentChart.reason || 'This chart type was selected based on your data structure.'}
+          {recommendationReason || currentChart.reason || 'This chart type was selected based on your data structure.'}
         </Typography>
       </Paper>
     </Box>
@@ -270,7 +297,9 @@ const SmartChart = ({ data, initialChartType = null }) => {
 
 SmartChart.propTypes = {
   data: PropTypes.array.isRequired,
-  initialChartType: PropTypes.oneOf(['bar', 'line', 'pie'])
+  initialChartType: PropTypes.oneOf(['bar', 'line', 'pie']),
+  recommendedConfig: PropTypes.object,
+  recommendationReason: PropTypes.string
 };
 
 export default SmartChart;

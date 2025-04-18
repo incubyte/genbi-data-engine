@@ -167,7 +167,18 @@ const ResultsDisplay = ({ results: propResults }) => {
 
           <TabPanel value={tabValue} index={1}>
             <Box sx={{ mb: 3 }}>
-              <SmartChart data={data} />
+              <SmartChart
+                data={data}
+                initialChartType={results?.visualization?.recommendedChartTypes?.[0]}
+                recommendedConfig={{
+                  xAxis: results?.visualization?.xAxis,
+                  yAxis: results?.visualization?.yAxis,
+                  labels: results?.visualization?.xAxis,
+                  values: results?.visualization?.yAxis,
+                  title: `${results?.visualization?.yAxis || ''} by ${results?.visualization?.xAxis || ''}`
+                }}
+                recommendationReason={results?.visualization?.reasoning}
+              />
             </Box>
           </TabPanel>
 

@@ -111,7 +111,7 @@ describe('AnthropicService', () => {
       expect(generateSpy).toHaveBeenCalledWith({
         systemPrompt,
         messages: [{ role: 'user', content: userQuery }],
-        maxTokens: 1000
+        maxTokens: 1500
       });
     });
 
@@ -135,25 +135,57 @@ describe('AnthropicService', () => {
       expect(parseSpy).toHaveBeenCalledWith(mockResponse);
     });
 
-    test('should return the parsed SQL query', async () => {
+    test('should return the parsed SQL query and visualization recommendations', async () => {
       // Arrange
       const userQuery = 'Show me all users';
       const schema = { users: { columns: ['id', 'name'] } };
       const dbType = 'sqlite';
-      const mockResponse = { content: [{ text: 'SELECT * FROM users;' }] };
-      const expectedSql = 'SELECT * FROM users;';
+      const mockResponse = { content: [{ text: '{"sql":"SELECT * FROM users;","visualization":{"recommendedChartTypes":["bar","table"],"xAxis":"name","yAxis":"id","reasoning":"Bar chart is recommended to compare IDs across different users."}}' }] };
+      const expectedResult = {
+        sqlQuery: 'SELECT * FROM users;',
+        visualization: {
+          recommendedChartTypes: ['bar', 'table'],
+          xAxis: 'name',
+          yAxis: 'id',
+          reasoning: 'Bar chart is recommended to compare IDs across different users.'
+        }
+      };
 
       // Mock the client response
       jest.spyOn(mockClient, 'generateResponse').mockResolvedValue(mockResponse);
 
       // Mock the response parser
-      jest.spyOn(responseParser, 'parseResponse').mockReturnValue(expectedSql);
+      jest.spyOn(responseParser, 'parseResponse').mockReturnValue(expectedResult);
 
       // Act
       const result = await anthropicService.generateSqlQuery(userQuery, schema, dbType);
 
       // Assert
-      expect(result).toBe(expectedSql);
+      expect(result).toEqual(expectedResult);
+    });
+
+    test('should handle response with only SQL query (no visualization)', async () => {
+      // Arrange
+      const userQuery = 'Show me all users';
+      const schema = { users: { columns: ['id', 'name'] } };
+      const dbType = 'sqlite';
+      const mockResponse = { content: [{ text: 'SELECT * FROM users;' }] };
+      const expectedResult = {
+        sqlQuery: 'SELECT * FROM users;',
+        visualization: null
+      };
+
+      // Mock the client response
+      jest.spyOn(mockClient, 'generateResponse').mockResolvedValue(mockResponse);
+
+      // Mock the response parser
+      jest.spyOn(responseParser, 'parseResponse').mockReturnValue(expectedResult);
+
+      // Act
+      const result = await anthropicService.generateSqlQuery(userQuery, schema, dbType);
+
+      // Assert
+      expect(result).toEqual(expectedResult);
     });
   });
 

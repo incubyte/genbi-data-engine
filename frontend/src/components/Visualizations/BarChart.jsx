@@ -5,7 +5,10 @@ import { Chart, registerables } from 'chart.js';
 import { prepareBarChartData } from '../../utils/chartUtils';
 
 // Register Chart.js components
-Chart.register(...registerables);
+// Safely register Chart.js components if the register function exists
+if (Chart.register) {
+  Chart.register(...registerables);
+}
 
 /**
  * Bar Chart component using Chart.js

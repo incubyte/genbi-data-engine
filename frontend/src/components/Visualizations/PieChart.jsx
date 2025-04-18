@@ -5,7 +5,10 @@ import { Chart, registerables } from 'chart.js';
 import { preparePieChartData } from '../../utils/chartUtils';
 
 // Register Chart.js components
-Chart.register(...registerables);
+// Safely register Chart.js components if the register function exists
+if (Chart.register) {
+  Chart.register(...registerables);
+}
 
 /**
  * Pie Chart component using Chart.js

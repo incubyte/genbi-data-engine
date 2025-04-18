@@ -14,9 +14,9 @@ class PromptBuilder {
   constructor(options = {}) {
     this.includeExamples = options.includeExamples !== false; // Default to true
     this.includeChainOfThought = options.includeChainOfThought !== false; // Default to true
-    logger.debug('PromptBuilder initialized', { 
-      includeExamples: this.includeExamples, 
-      includeChainOfThought: this.includeChainOfThought 
+    logger.debug('PromptBuilder initialized', {
+      includeExamples: this.includeExamples,
+      includeChainOfThought: this.includeChainOfThought
     });
   }
 
@@ -29,21 +29,21 @@ class PromptBuilder {
    */
   buildSqlGenerationPrompt({ schema, dbType }) {
     logger.debug('Building SQL generation prompt', { dbType });
-    
+
     // Format the schema as a string
     const schemaString = JSON.stringify(schema, null, 2);
-    
+
     // Get database-specific instructions
     const dbSpecificInstructions = this.getDatabaseSpecificInstructions(dbType);
-    
+
     // Build the base prompt
     let prompt = this.buildBasePrompt(dbType, schemaString, dbSpecificInstructions);
-    
+
     // Add examples if enabled
     if (this.includeExamples) {
       prompt += this.getExamples(dbType);
     }
-    
+
     // Add chain-of-thought instructions if enabled
     if (this.includeChainOfThought) {
       prompt += this.getChainOfThoughtInstructions();
@@ -60,7 +60,7 @@ class PromptBuilder {
    * @returns {string} - Base prompt
    */
   buildBasePrompt(dbType, schemaString, dbSpecificInstructions) {
-    return `You are an expert SQL query generator. Your task is to convert natural language queries into valid SQL queries.
+    return `You are an expert SQL query generator and data visualization advisor. Your task is to convert natural language queries into valid SQL queries and recommend appropriate visualizations for the results.
 
 You will be provided with:
 1. A user's natural language query describing what data they want
@@ -71,15 +71,26 @@ Your job is to:
 1. Analyze the user's query and understand what data they're looking for
 2. Examine the database schema to understand the available tables and their relationships
 3. Generate a valid SQL query that will retrieve the requested data
-4. Ensure the query is optimized and follows best practices
-5. Return ONLY the SQL query without any explanations or additional text
+4. Recommend appropriate chart types for visualizing the query results
+5. Ensure the query is optimized and follows best practices
+6. Return your response in a specific JSON format
 
 Here is the database schema:
 ${schemaString}
 
 Remember:${dbSpecificInstructions}
 - Ensure proper handling of potential SQL injection by using parameterized queries where appropriate
-- Return ONLY the SQL query without any explanations or additional text`;
+- Return your response in the following JSON format with sql and visualization fields
+
+For the visualization recommendations:
+- Recommend chart types based on the expected structure of the query results
+- Common chart types include: "bar", "line", "pie", "scatter", "table"
+- For time series data, recommend "line" charts
+- For categorical comparisons, recommend "bar" charts
+- For part-to-whole relationships, recommend "pie" charts
+- For data with many dimensions or complex relationships, recommend "table" view
+- Specify which columns should be used for x-axis and y-axis (or labels and values for pie charts)
+- Provide brief reasoning for your recommendations`;
   }
 
   /**
