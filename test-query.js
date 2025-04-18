@@ -16,8 +16,26 @@ async function testQuery() {
       // Uncomment to test with PostgreSQL
       // {
       //   type: 'postgres',
-      //   connection: 'postgres://username:password@localhost:5432/testdb',
+      //   connection: {
+      //     host: process.env.PG_HOST || 'localhost',
+      //     port: process.env.PG_PORT || 5432,
+      //     database: process.env.PG_DATABASE || 'testdb',
+      //     user: process.env.PG_USER || 'postgres',
+      //     password: process.env.PG_PASSWORD || 'postgres'
+      //   },
       //   label: 'PostgreSQL'
+      // },
+      // Uncomment to test with MySQL
+      // {
+      //   type: 'mysql',
+      //   connection: {
+      //     host: process.env.MYSQL_HOST || 'localhost',
+      //     port: process.env.MYSQL_PORT || 3306,
+      //     database: process.env.MYSQL_DATABASE || 'testdb',
+      //     user: process.env.MYSQL_USER || 'root',
+      //     password: process.env.MYSQL_PASSWORD || 'password'
+      //   },
+      //   label: 'MySQL'
       // }
     ];
 

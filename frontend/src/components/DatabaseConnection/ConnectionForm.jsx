@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { 
-  Box, 
-  TextField, 
-  Button, 
-  FormControl, 
-  InputLabel, 
-  Select, 
-  MenuItem, 
-  Typography, 
-  Paper, 
-  Grid, 
-  Alert, 
+import {
+  Box,
+  TextField,
+  Button,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Typography,
+  Paper,
+  Grid,
+  Alert,
   Snackbar,
   Dialog,
   DialogTitle,
@@ -27,24 +27,24 @@ const ConnectionForm = ({ onConnectionEstablished }) => {
   const [databaseType, setDatabaseType] = useState('sqlite');
   const [formData, setFormData] = useState({
     connection: '', // For SQLite
-    host: 'localhost', // For PostgreSQL
-    port: '5432', // For PostgreSQL
-    database: '', // For PostgreSQL
-    user: '', // For PostgreSQL
-    password: '' // For PostgreSQL
+    host: 'localhost', // For PostgreSQL/MySQL
+    port: '5432', // For PostgreSQL (default 5432) / MySQL (default 3306)
+    database: '', // For PostgreSQL/MySQL
+    user: '', // For PostgreSQL/MySQL
+    password: '' // For PostgreSQL/MySQL
   });
-  
+
   // State for form validation
   const [errors, setErrors] = useState({});
-  
+
   // State for testing connection
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
-  
+
   // State for save connection dialog
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [connectionName, setConnectionName] = useState('');
-  
+
   // State for notifications
   const [notification, setNotification] = useState({
     open: false,
@@ -59,7 +59,7 @@ const ConnectionForm = ({ onConnectionEstablished }) => {
       ...prev,
       [name]: value
     }));
-    
+
     // Clear error for this field if it exists
     if (errors[name]) {
       setErrors(prev => {
@@ -72,7 +72,22 @@ const ConnectionForm = ({ onConnectionEstablished }) => {
 
   // Handle database type change
   const handleDatabaseTypeChange = (e) => {
-    setDatabaseType(e.target.value);
+    const newType = e.target.value;
+    setDatabaseType(newType);
+
+    // Update port based on database type
+    if (newType === 'mysql' && formData.port === '5432') {
+      setFormData(prev => ({
+        ...prev,
+        port: '3306' // Default MySQL port
+      }));
+    } else if (newType === 'postgres' && formData.port === '3306') {
+      setFormData(prev => ({
+        ...prev,
+        port: '5432' // Default PostgreSQL port
+      }));
+    }
+
     setErrors({});
   };
 
@@ -84,21 +99,21 @@ const ConnectionForm = ({ onConnectionEstablished }) => {
       setErrors(validation.errors);
       return;
     }
-    
+
     setTesting(true);
     setTestResult(null);
-    
+
     try {
       // Prepare connection info based on database type
       const connectionInfo = prepareConnectionInfo();
-      
+
       // Test connection
       const result = await apiService.testConnection(connectionInfo);
-      
+
       setTestResult({
         success: result.success,
-        message: result.success 
-          ? 'Connection successful!' 
+        message: result.success
+          ? 'Connection successful!'
           : `Connection failed: ${result.error}`
       });
     } catch (error) {
@@ -118,9 +133,9 @@ const ConnectionForm = ({ onConnectionEstablished }) => {
         type: 'sqlite',
         connection: formData.connection
       };
-    } else if (databaseType === 'postgres') {
+    } else if (databaseType === 'postgres' || databaseType === 'mysql') {
       return {
-        type: 'postgres',
+        type: databaseType,
         connection: {
           host: formData.host,
           port: parseInt(formData.port),
@@ -142,11 +157,11 @@ const ConnectionForm = ({ onConnectionEstablished }) => {
       });
       return;
     }
-    
+
     // Save connection to local storage
     const connectionInfo = prepareConnectionInfo();
     saveConnection(connectionInfo, connectionName);
-    
+
     // Close dialog and show success notification
     setSaveDialogOpen(false);
     setConnectionName('');
@@ -160,17 +175,17 @@ const ConnectionForm = ({ onConnectionEstablished }) => {
   // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Validate form
     const validation = validateConnectionForm(formData, databaseType);
     if (!validation.isValid) {
       setErrors(validation.errors);
       return;
     }
-    
+
     // Prepare connection info
     const connectionInfo = prepareConnectionInfo();
-    
+
     // Call the parent component's callback
     onConnectionEstablished(connectionInfo);
   };
@@ -188,7 +203,7 @@ const ConnectionForm = ({ onConnectionEstablished }) => {
       <Typography variant="h5" component="h2" gutterBottom>
         Database Connection
       </Typography>
-      
+
       <Box component="form" onSubmit={handleSubmit} noValidate>
         <Grid container spacing={3}>
           {/* Database Type Selector */}
@@ -204,10 +219,11 @@ const ConnectionForm = ({ onConnectionEstablished }) => {
               >
                 <MenuItem value="sqlite">SQLite</MenuItem>
                 <MenuItem value="postgres">PostgreSQL</MenuItem>
+                <MenuItem value="mysql">MySQL</MenuItem>
               </Select>
             </FormControl>
           </Grid>
-          
+
           {/* Dynamic Form Fields Based on Database Type */}
           {databaseType === 'sqlite' ? (
             <Grid item xs={12}>
@@ -292,7 +308,7 @@ const ConnectionForm = ({ onConnectionEstablished }) => {
               </Grid>
             </>
           )}
-          
+
           {/* Test Result Alert */}
           {testResult && (
             <Grid item xs={12}>
@@ -301,7 +317,7 @@ const ConnectionForm = ({ onConnectionEstablished }) => {
               </Alert>
             </Grid>
           )}
-          
+
           {/* Action Buttons */}
           <Grid item xs={12}>
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
@@ -313,14 +329,14 @@ const ConnectionForm = ({ onConnectionEstablished }) => {
               >
                 {testing ? 'Testing...' : 'Test Connection'}
               </Button>
-              
+
               <Button
                 variant="outlined"
                 onClick={() => setSaveDialogOpen(true)}
               >
                 Save Connection
               </Button>
-              
+
               <Button
                 type="submit"
                 variant="contained"
@@ -332,7 +348,7 @@ const ConnectionForm = ({ onConnectionEstablished }) => {
           </Grid>
         </Grid>
       </Box>
-      
+
       {/* Save Connection Dialog */}
       <Dialog open={saveDialogOpen} onClose={() => setSaveDialogOpen(false)}>
         <DialogTitle>Save Connection</DialogTitle>
@@ -353,15 +369,15 @@ const ConnectionForm = ({ onConnectionEstablished }) => {
           <Button onClick={handleSaveConnection} color="primary">Save</Button>
         </DialogActions>
       </Dialog>
-      
+
       {/* Notification Snackbar */}
       <Snackbar
         open={notification.open}
         autoHideDuration={6000}
         onClose={handleCloseNotification}
       >
-        <Alert 
-          onClose={handleCloseNotification} 
+        <Alert
+          onClose={handleCloseNotification}
           severity={notification.severity}
           sx={{ width: '100%' }}
         >

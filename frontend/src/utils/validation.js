@@ -12,25 +12,30 @@ export const validateConnectionForm = (formData, databaseType) => {
     if (!formData.connection) {
       errors.connection = 'Database file path is required';
     }
-  } else if (databaseType === 'postgres') {
+  } else if (databaseType === 'postgres' || databaseType === 'mysql') {
     if (!formData.host) {
       errors.host = 'Host is required';
     }
-    
+
     if (!formData.port) {
       errors.port = 'Port is required';
     } else if (isNaN(formData.port) || formData.port < 0) {
       errors.port = 'Port must be a valid number';
     }
-    
+
     if (!formData.database) {
       errors.database = 'Database name is required';
     }
-    
+
     if (!formData.user) {
       errors.user = 'Username is required';
     }
-    
+
+    // Password validation
+    if (databaseType === 'mysql' && !formData.password) {
+      // Password is typically required for MySQL
+      errors.password = 'Password is required';
+    }
     // Password is optional for some PostgreSQL configurations
   }
 

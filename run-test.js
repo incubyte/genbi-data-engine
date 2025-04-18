@@ -10,6 +10,11 @@ const setupDb = spawn('node', ['test-db.js'], { stdio: 'inherit' });
 // console.log('Setting up PostgreSQL test database...');
 // const setupPgDb = spawn('node', ['test-postgres-db.js'], { stdio: 'inherit' });
 
+// Uncomment to also set up MySQL test database
+// Note: This requires MySQL to be installed and configured
+// console.log('Setting up MySQL test database...');
+// const setupMysqlDb = spawn('node', ['test-mysql-db.js'], { stdio: 'inherit' });
+
 setupDb.on('close', (code) => {
   if (code !== 0) {
     console.error(`SQLite database setup process exited with code ${code}`);

@@ -23,7 +23,7 @@ class AnthropicService {
    * Generate a SQL query from natural language using Anthropic's API
    * @param {string} userQuery - User's natural language query
    * @param {Object} schema - Database schema information
-   * @param {string} dbType - Database type ('sqlite' or 'postgres')
+   * @param {string} dbType - Database type ('sqlite', 'postgres', or 'mysql')
    * @returns {Promise<string>} - Generated SQL query
    */
   async generateSqlQuery(userQuery, schema, dbType = 'sqlite') {
@@ -47,6 +47,11 @@ class AnthropicService {
 - Generate SQL that works with PostgreSQL
 - You can use PostgreSQL-specific features when appropriate
 - Use $1, $2, etc. for parameterized queries in PostgreSQL`;
+      } else if (dbType === 'mysql') {
+        dbSpecificInstructions = `
+- Generate SQL that works with MySQL
+- You can use MySQL-specific features when appropriate
+- Use ? for parameterized queries in MySQL`;
       } else {
         dbSpecificInstructions = `
 - Generate only standard SQL that works with SQLite
@@ -101,7 +106,7 @@ Remember:${dbSpecificInstructions}
    * Generate a mock SQL query for testing purposes
    * @param {string} userQuery - User's natural language query
    * @param {Object} schema - Database schema information
-   * @param {string} dbType - Database type ('sqlite' or 'postgres')
+   * @param {string} dbType - Database type ('sqlite', 'postgres', or 'mysql')
    * @returns {string} - Generated mock SQL query
    */
   generateMockSqlQuery(userQuery, schema, dbType = 'sqlite') {
@@ -110,6 +115,7 @@ Remember:${dbSpecificInstructions}
     // Simple pattern matching to generate mock queries
     const userQueryLower = userQuery.toLowerCase();
     const isPostgres = dbType === 'postgres';
+    const isMysql = dbType === 'mysql';
 
     logger.debug(`Generating mock SQL query for ${dbType} database`);
 
@@ -120,15 +126,23 @@ Remember:${dbSpecificInstructions}
         ? "SELECT * FROM products WHERE category = 'Electronics';"
         : "SELECT * FROM products WHERE category = 'Electronics';";
     } else if (userQueryLower.includes('total sales') && userQueryLower.includes('user')) {
-      return isPostgres
-        ? 'SELECT users.name, SUM(orders.total_amount) as total_sales FROM users JOIN orders ON users.id = orders.user_id GROUP BY users.id;'
-        : 'SELECT users.name, SUM(orders.total_amount) as total_sales FROM users JOIN orders ON users.id = orders.user_id GROUP BY users.id;';
+      if (isPostgres) {
+        return 'SELECT users.name, SUM(orders.total_amount) as total_sales FROM users JOIN orders ON users.id = orders.user_id GROUP BY users.id;';
+      } else if (isMysql) {
+        return 'SELECT users.name, SUM(orders.total_amount) as total_sales FROM users JOIN orders ON users.id = orders.user_id GROUP BY users.id, users.name;';
+      } else {
+        return 'SELECT users.name, SUM(orders.total_amount) as total_sales FROM users JOIN orders ON users.id = orders.user_id GROUP BY users.id;';
+      }
     } else if (userQueryLower.includes('orders') && userQueryLower.includes('greater than')) {
       return 'SELECT * FROM orders WHERE total_amount > 1000;';
     } else if (userQueryLower.includes('products') && userQueryLower.includes('never been ordered')) {
-      return isPostgres
-        ? 'SELECT p.* FROM products p LEFT JOIN order_items oi ON p.id = oi.product_id WHERE oi.product_id IS NULL;'
-        : 'SELECT products.* FROM products LEFT JOIN order_items ON products.id = order_items.product_id WHERE order_items.id IS NULL;';
+      if (isPostgres) {
+        return 'SELECT p.* FROM products p LEFT JOIN order_items oi ON p.id = oi.product_id WHERE oi.product_id IS NULL;';
+      } else if (isMysql) {
+        return 'SELECT p.* FROM products p LEFT JOIN order_items oi ON p.id = oi.product_id WHERE oi.product_id IS NULL;';
+      } else {
+        return 'SELECT products.* FROM products LEFT JOIN order_items ON products.id = order_items.product_id WHERE order_items.id IS NULL;';
+      }
     } else {
       // Default query if no pattern matches
       const tables = Object.keys(schema);

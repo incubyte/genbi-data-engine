@@ -16,7 +16,7 @@ This project is organized into two main components:
 - Database integration with schema extraction for:
   - SQLite
   - PostgreSQL
-  - MySQL (coming soon)
+  - MySQL
 - Anthropic API integration for natural language to SQL conversion
 - Main endpoint that processes user queries and returns results
 - Comprehensive error handling and logging
@@ -120,15 +120,26 @@ For PostgreSQL:
 }
 ```
 
+For MySQL:
+```json
+{
+  "userQuery": "Show me all users older than 30",
+  "connection": {
+    "type": "mysql",
+    "connection": "mysql://root:password@localhost:3306/testdb"
+  }
+}
+```
+
 Or with connection object:
 ```json
 {
   "userQuery": "Show me all users older than 30",
   "connection": {
-    "type": "postgres",
+    "type": "postgres", // or "mysql"
     "connection": {
       "host": "localhost",
-      "port": 5432,
+      "port": 5432, // 3306 for MySQL
       "database": "database",
       "user": "username",
       "password": "password"
@@ -160,19 +171,24 @@ Or with connection object:
 
 ### Testing
 
-1. Set up a test database:
+1. Set up test databases:
    ```
-   npm run setup-test-db
+   npm run setup-sqlite-db  # For SQLite
+   npm run setup-postgres-db  # For PostgreSQL (requires PostgreSQL installed)
+   npm run setup-mysql-db  # For MySQL (requires MySQL installed)
    ```
 
 2. Run the test queries:
    ```
-   npm run test-query
+   npm run test-query  # Tests with SQLite by default
+   npm run test:sqlite  # Tests with SQLite
+   npm run test:postgres  # Tests with PostgreSQL
+   npm run test:mysql  # Tests with MySQL
    ```
 
 3. Run both setup and tests:
    ```
-   npm test
+   npm test  # Uses SQLite by default
    ```
 
 ## Mock Mode

@@ -76,6 +76,13 @@ const SavedConnections = ({ onSelectConnection }) => {
       } else {
         return `PostgreSQL: ${conn.host}:${conn.port}/${conn.database}`;
       }
+    } else if (connection.type === 'mysql') {
+      const conn = connection.connection;
+      if (typeof conn === 'string') {
+        return `MySQL: ${conn}`;
+      } else {
+        return `MySQL: ${conn.host}:${conn.port}/${conn.database}`;
+      }
     }
     return 'Unknown connection type';
   };
@@ -95,7 +102,7 @@ const SavedConnections = ({ onSelectConnection }) => {
           {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
         </IconButton>
       </Box>
-      
+
       <Collapse in={expanded}>
         {connections.length === 0 ? (
           <Typography variant="body2" color="textSecondary">
@@ -106,13 +113,13 @@ const SavedConnections = ({ onSelectConnection }) => {
             {connections.map((connection, index) => (
               <React.Fragment key={connection.id}>
                 {index > 0 && <Divider />}
-                <ListItem 
-                  button 
+                <ListItem
+                  button
                   onClick={() => handleSelectConnection(connection)}
-                  sx={{ 
-                    '&:hover': { 
-                      backgroundColor: 'rgba(0, 0, 0, 0.04)' 
-                    } 
+                  sx={{
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                    }
                   }}
                 >
                   <ListItemText
@@ -121,8 +128,8 @@ const SavedConnections = ({ onSelectConnection }) => {
                   />
                   <ListItemSecondaryAction>
                     <Tooltip title="Use this connection">
-                      <IconButton 
-                        edge="end" 
+                      <IconButton
+                        edge="end"
                         onClick={() => handleSelectConnection(connection)}
                         color="primary"
                       >
@@ -130,8 +137,8 @@ const SavedConnections = ({ onSelectConnection }) => {
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Delete connection">
-                      <IconButton 
-                        edge="end" 
+                      <IconButton
+                        edge="end"
                         onClick={(e) => handleOpenDeleteDialog(e, connection)}
                         color="error"
                       >
@@ -154,7 +161,7 @@ const SavedConnections = ({ onSelectConnection }) => {
         <DialogTitle>Delete Connection</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete the connection "{connectionToDelete?.name}"? 
+            Are you sure you want to delete the connection "{connectionToDelete?.name}"?
             This action cannot be undone.
           </DialogContentText>
         </DialogContent>
