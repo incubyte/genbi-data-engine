@@ -56,15 +56,17 @@ class QueryController {
       // Check if this is a connection test query
       const isConnectionTest = userQuery.toLowerCase().includes('connection test');
 
-      let sqlQuery, results;
+      let sqlQuery, results, visualization = null;
 
       if (isConnectionTest) {
         // For connection tests, use a simple query that works on any database
         sqlQuery = 'SELECT 1 AS connection_test';
         results = await dbService.executeQuery(db, sqlQuery, [], { useCache: false });
       } else {
-        // Generate SQL query using Anthropic for regular queries
-        sqlQuery = await anthropicService.generateSqlQuery(userQuery, schema, dbType);
+        // Generate SQL query and visualization recommendations using Anthropic for regular queries
+        const generatedResponse = await anthropicService.generateSqlQuery(userQuery, schema, dbType);
+        sqlQuery = generatedResponse.sqlQuery;
+        visualization = generatedResponse.visualization;
 
         // Execute the generated SQL query with caching
         results = await dbService.executeQuery(db, sqlQuery, [], {
@@ -73,13 +75,14 @@ class QueryController {
         });
       }
 
-      // Return the results and the generated SQL query
+      // Return the results, SQL query, and visualization recommendations
       res.status(200).json({
         status: 'success',
         data: {
           results,
           sqlQuery,
-          databaseType: dbType
+          databaseType: dbType,
+          visualization
         },
       });
     } catch (error) {

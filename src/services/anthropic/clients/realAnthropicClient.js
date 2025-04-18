@@ -59,8 +59,8 @@ class RealAnthropicClient extends IAnthropicClient {
         // Extract the user query from the messages
         const userQuery = messages.find(m => m.role === 'user')?.content || '';
 
-        // Generate a SQL query based on the schema in the system prompt
-        let sqlQuery = this.generateSqlQueryFromSchema(userQuery, systemPrompt);
+        // Generate a SQL query and visualization recommendations based on the schema in the system prompt
+        let response = this.generateResponseFromSchema(userQuery, systemPrompt);
 
         // Return a response object that mimics the Anthropic API response structure
         return {
@@ -71,7 +71,7 @@ class RealAnthropicClient extends IAnthropicClient {
           content: [
             {
               type: 'text',
-              text: sqlQuery
+              text: response
             }
           ],
           usage: {
@@ -98,8 +98,8 @@ class RealAnthropicClient extends IAnthropicClient {
           // Extract the user query from the messages
           const userQuery = messages.find(m => m.role === 'user')?.content || '';
 
-          // Generate a SQL query based on the schema in the system prompt
-          let sqlQuery = this.generateSqlQueryFromSchema(userQuery, systemPrompt);
+          // Generate a SQL query and visualization recommendations based on the schema in the system prompt
+          let response = this.generateResponseFromSchema(userQuery, systemPrompt);
 
           // Return a response object that mimics the Anthropic API response structure
           return {
@@ -110,7 +110,7 @@ class RealAnthropicClient extends IAnthropicClient {
             content: [
               {
                 type: 'text',
-                text: sqlQuery
+                text: response
               }
             ],
             usage: {
@@ -154,12 +154,12 @@ class RealAnthropicClient extends IAnthropicClient {
   }
 
   /**
-   * Generate a SQL query based on the schema in the system prompt
+   * Generate a response with SQL query and visualization recommendations based on the schema in the system prompt
    * @param {string} userQuery - User's natural language query
    * @param {string} systemPrompt - System prompt containing the schema
-   * @returns {string} - Generated SQL query
+   * @returns {string} - Generated response in JSON format with SQL and visualization recommendations
    */
-  generateSqlQueryFromSchema(userQuery, systemPrompt) {
+  generateResponseFromSchema(userQuery, systemPrompt) {
     // Extract the schema from the system prompt
     const schemaMatch = systemPrompt.match(/Here is the database schema:\s*([\s\S]*?)\s*Remember:/i);
     const schemaString = schemaMatch ? schemaMatch[1].trim() : '{}';
@@ -170,6 +170,7 @@ class RealAnthropicClient extends IAnthropicClient {
 
       // Generate a SQL query based on the user query and schema
       const userQueryLower = userQuery.toLowerCase();
+      let sqlQuery, visualization;
 
       // Check if this is a connection test query
       if (userQueryLower.includes('first row') && userQueryLower.includes('any table')) {
@@ -183,23 +184,73 @@ class RealAnthropicClient extends IAnthropicClient {
         return 'SELECT 1 AS no_tables_available;';
       }
 
-      // Simple pattern matching to generate SQL queries
+      // Simple pattern matching to generate SQL queries and visualization recommendations
       if (userQueryLower.includes('users') && userQueryLower.includes('older than')) {
-        return 'SELECT * FROM users WHERE age > 30;';
+        sqlQuery = 'SELECT * FROM users WHERE age > 30;';
+        visualization = {
+          recommendedChartTypes: ['bar', 'table'],
+          xAxis: 'name',
+          yAxis: 'age',
+          reasoning: 'Bar chart is recommended to compare ages across different users.'
+        };
       } else if (userQueryLower.includes('products') && userQueryLower.includes('electronics')) {
-        return "SELECT * FROM products WHERE category = 'Electronics';";
+        sqlQuery = "SELECT * FROM products WHERE category = 'Electronics';";
+        visualization = {
+          recommendedChartTypes: ['table'],
+          reasoning: 'Table view is recommended for displaying detailed product information.'
+        };
       } else if (userQueryLower.includes('total sales') && userQueryLower.includes('user')) {
-        return 'SELECT users.name, SUM(orders.total_amount) as total_sales FROM users JOIN orders ON users.id = orders.user_id GROUP BY users.id;';
+        sqlQuery = 'SELECT users.name, SUM(orders.total_amount) as total_sales FROM users JOIN orders ON users.id = orders.user_id GROUP BY users.id;';
+        visualization = {
+          recommendedChartTypes: ['bar', 'pie'],
+          xAxis: 'name',
+          yAxis: 'total_sales',
+          reasoning: 'Bar chart is recommended to compare sales across different users. Pie chart can show the proportion of sales by user.'
+        };
       } else if (userQueryLower.includes('orders') && userQueryLower.includes('greater than')) {
-        return 'SELECT * FROM orders WHERE total_amount > 1000;';
+        sqlQuery = 'SELECT * FROM orders WHERE total_amount > 1000;';
+        visualization = {
+          recommendedChartTypes: ['table'],
+          reasoning: 'Table view is recommended for displaying detailed order information.'
+        };
       } else if (userQueryLower.includes('products') && userQueryLower.includes('never been ordered')) {
-        return 'SELECT products.* FROM products LEFT JOIN order_items ON products.id = order_items.product_id WHERE order_items.id IS NULL;';
+        sqlQuery = 'SELECT products.* FROM products LEFT JOIN order_items ON products.id = order_items.product_id WHERE order_items.id IS NULL;';
+        visualization = {
+          recommendedChartTypes: ['table'],
+          reasoning: 'Table view is recommended for displaying detailed product information.'
+        };
+      } else if (userQueryLower.includes('monthly') || userQueryLower.includes('yearly') || userQueryLower.includes('daily')) {
+        sqlQuery = 'SELECT date, SUM(amount) as total FROM sales GROUP BY date ORDER BY date;';
+        visualization = {
+          recommendedChartTypes: ['line', 'bar'],
+          xAxis: 'date',
+          yAxis: 'total',
+          reasoning: 'Line chart is recommended for time series data to show trends over time.'
+        };
+      } else if (userQueryLower.includes('category') || userQueryLower.includes('group')) {
+        sqlQuery = 'SELECT category, COUNT(*) as count FROM products GROUP BY category;';
+        visualization = {
+          recommendedChartTypes: ['bar', 'pie'],
+          xAxis: 'category',
+          yAxis: 'count',
+          reasoning: 'Bar chart is recommended for comparing counts across categories. Pie chart can show the proportion of each category.'
+        };
       } else {
         // Default query if no pattern matches
-        return `SELECT * FROM ${tables[0]} LIMIT 10;`;
+        sqlQuery = `SELECT * FROM ${tables[0]} LIMIT 10;`;
+        visualization = {
+          recommendedChartTypes: ['table'],
+          reasoning: 'Table view is recommended for displaying general query results.'
+        };
       }
+
+      // Return a JSON response with SQL and visualization
+      return `{
+  "sql": "${sqlQuery}",
+  "visualization": ${JSON.stringify(visualization, null, 2)}
+}`;
     } catch (error) {
-      logger.error('Error parsing schema or generating SQL query:', error);
+      logger.error('Error parsing schema or generating response:', error);
       return 'SELECT 1 AS error_generating_query;';
     }
   }
