@@ -10,12 +10,12 @@ const testConfig = {
     port: 3001, // Use a different port for testing
     env: 'test'
   },
-  
+
   // Database configuration
   database: {
     userDataPath: path.join(process.cwd(), 'data', 'test-user-data.db')
   },
-  
+
   // API configuration
   api: {
     anthropic: {
@@ -23,13 +23,13 @@ const testConfig = {
       model: 'claude-3-opus-20240229'
     }
   },
-  
+
   // Logging configuration
   logging: {
     level: 'error', // Only log errors during tests
     directory: path.join(process.cwd(), 'logs')
   },
-  
+
   // Test data
   testData: {
     connections: [
@@ -76,13 +76,13 @@ const setupTestEnvironment = () => {
   // Set environment variables for testing
   process.env.NODE_ENV = 'test';
   process.env.PORT = testConfig.server.port;
-  
+
   // Create test data directory if it doesn't exist
   const dataDir = path.dirname(testConfig.database.userDataPath);
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
   }
-  
+
   return testConfig;
 };
 
@@ -92,7 +92,12 @@ const setupTestEnvironment = () => {
 const cleanupTestEnvironment = () => {
   // Remove test database if it exists
   if (fs.existsSync(testConfig.database.userDataPath)) {
-    fs.unlinkSync(testConfig.database.userDataPath);
+    try {
+      fs.unlinkSync(testConfig.database.userDataPath);
+      console.log(`Test database removed: ${testConfig.database.userDataPath}`);
+    } catch (error) {
+      console.error(`Error removing test database: ${error.message}`);
+    }
   }
 };
 

@@ -1,5 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 const { promisify } = require('util');
+const fs = require('fs');
 const { testConfig } = require('../config/test-config');
 
 /**
@@ -8,22 +9,34 @@ const { testConfig } = require('../config/test-config');
  */
 const createTestDatabase = async () => {
   return new Promise((resolve, reject) => {
+    // Delete existing test database if it exists
+    const dbPath = testConfig.database.userDataPath;
+    if (fs.existsSync(dbPath)) {
+      try {
+        fs.unlinkSync(dbPath);
+        console.log(`Removed existing test database: ${dbPath}`);
+      } catch (error) {
+        console.error(`Error removing existing test database: ${error.message}`);
+        // Continue anyway
+      }
+    }
+
     // Create a new database connection
-    const db = new sqlite3.Database(testConfig.database.userDataPath, async (err) => {
+    const db = new sqlite3.Database(dbPath, async (err) => {
       if (err) {
         reject(err);
         return;
       }
-      
+
       // Promisify database methods
       db.runAsync = promisify(db.run).bind(db);
       db.allAsync = promisify(db.all).bind(db);
       db.getAsync = promisify(db.get).bind(db);
-      
+
       try {
         // Enable foreign keys
         await db.runAsync('PRAGMA foreign_keys = ON');
-        
+
         // Create saved_connections table
         await db.runAsync(`
           CREATE TABLE saved_connections (
@@ -34,7 +47,7 @@ const createTestDatabase = async () => {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           )
         `);
-        
+
         // Create saved_queries table
         await db.runAsync(`
           CREATE TABLE saved_queries (
@@ -46,7 +59,7 @@ const createTestDatabase = async () => {
             FOREIGN KEY (connection_id) REFERENCES saved_connections(id) ON DELETE SET NULL
           )
         `);
-        
+
         // Insert test connections
         for (const conn of testConfig.testData.connections) {
           await db.runAsync(
@@ -55,11 +68,11 @@ const createTestDatabase = async () => {
               conn.id,
               conn.name,
               conn.type,
-              typeof conn.connection === 'string' ? conn.connection : JSON.stringify(conn.connection)
+              typeof conn.connection === 'object' ? JSON.stringify(conn.connection) : conn.connection
             ]
           );
         }
-        
+
         // Insert test queries
         for (const query of testConfig.testData.queries) {
           await db.runAsync(
@@ -67,9 +80,11 @@ const createTestDatabase = async () => {
             [query.id, query.name, query.query, query.connection_id]
           );
         }
-        
+
+        console.log(`Test database created successfully: ${dbPath}`);
         resolve(db);
       } catch (error) {
+        console.error(`Error setting up test database: ${error.message}`);
         reject(error);
       }
     });
