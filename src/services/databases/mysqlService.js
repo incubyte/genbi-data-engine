@@ -15,7 +15,7 @@ class MySQLService extends BaseDatabaseService {
   async connect(connectionInfo) {
     try {
       logger.info('Connecting to MySQL database');
-      
+
       // Parse connection string if provided as string
       let config = connectionInfo;
       if (typeof connectionInfo === 'string') {
@@ -30,7 +30,7 @@ class MySQLService extends BaseDatabaseService {
           ssl: url.searchParams.get('ssl') === 'true' ? {} : undefined
         };
       }
-      
+
       // Create a connection pool
       const pool = mysql.createPool({
         ...config,
@@ -38,12 +38,12 @@ class MySQLService extends BaseDatabaseService {
         connectionLimit: 10,
         queueLimit: 0
       });
-      
+
       // Test the connection
       const connection = await pool.getConnection();
       logger.info('Connected to the MySQL database');
       connection.release();
-      
+
       return pool;
     } catch (error) {
       logger.error('MySQL connection error:', error);
@@ -59,45 +59,54 @@ class MySQLService extends BaseDatabaseService {
   async extractSchema(pool) {
     try {
       logger.info('Extracting MySQL database schema');
-      
+
       const connection = await pool.getConnection();
-      
+
       try {
         // Get current database name
         const [dbResult] = await connection.query('SELECT DATABASE() as db_name');
         const dbName = dbResult[0].db_name;
-        
+
         // Get all tables
         const [tablesResult] = await connection.query(`
-          SELECT table_name 
-          FROM information_schema.tables 
-          WHERE table_schema = ? 
+          SELECT table_name
+          FROM information_schema.tables
+          WHERE table_schema = ?
           AND table_type = 'BASE TABLE'
         `, [dbName]);
-        
+
         const schema = {};
-        
+
+        // Log the number of tables found
+        logger.info(`Found ${tablesResult.length} tables in database ${dbName}`);
+
+        // If no tables found, return empty schema
+        if (tablesResult.length === 0) {
+          logger.info('No tables found in database, returning empty schema');
+          return schema;
+        }
+
         // For each table, get its columns and constraints
         for (const table of tablesResult) {
           const tableName = table.table_name;
-          
+
           // Get table columns
           const [columnsResult] = await connection.query(`
-            SELECT 
-              column_name, 
-              data_type, 
-              is_nullable, 
+            SELECT
+              column_name,
+              data_type,
+              is_nullable,
               column_default,
               column_key
-            FROM information_schema.columns 
-            WHERE table_schema = ? 
+            FROM information_schema.columns
+            WHERE table_schema = ?
             AND table_name = ?
             ORDER BY ordinal_position
           `, [dbName, tableName]);
-          
+
           // Get foreign keys
           const [foreignKeysResult] = await connection.query(`
-            SELECT 
+            SELECT
               k.constraint_name,
               column_name,
               k.referenced_table_name,
@@ -112,10 +121,10 @@ class MySQLService extends BaseDatabaseService {
               AND k.table_name = ?
               AND k.referenced_table_name IS NOT NULL
           `, [dbName, tableName]);
-          
+
           // Get indexes
           const [indexesResult] = await connection.query(`
-            SELECT 
+            SELECT
               index_name,
               non_unique
             FROM information_schema.statistics
@@ -123,7 +132,7 @@ class MySQLService extends BaseDatabaseService {
               AND table_name = ?
             GROUP BY index_name, non_unique
           `, [dbName, tableName]);
-          
+
           schema[tableName] = {
             columns: columnsResult.map(col => ({
               name: col.column_name,
@@ -146,7 +155,7 @@ class MySQLService extends BaseDatabaseService {
             }))
           };
         }
-        
+
         logger.info('MySQL schema extraction complete');
         return schema;
       } finally {
@@ -169,13 +178,13 @@ class MySQLService extends BaseDatabaseService {
     try {
       logger.info(`Executing MySQL query: ${query}`);
       logger.debug('Query parameters:', params);
-      
+
       const connection = await pool.getConnection();
-      
+
       try {
         const [rows] = await connection.query(query, params);
         logger.info(`MySQL query executed successfully, returned ${rows.length} rows`);
-        
+
         return rows;
       } finally {
         connection.release();
@@ -197,7 +206,7 @@ class MySQLService extends BaseDatabaseService {
         .catch(err => logger.error('Error closing MySQL database connection pool:', err));
     }
   }
-  
+
   /**
    * Get the database type
    * @returns {string} - Database type

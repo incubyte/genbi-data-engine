@@ -119,7 +119,11 @@ Remember:${dbSpecificInstructions}
 
     logger.debug(`Generating mock SQL query for ${dbType} database`);
 
-    if (userQueryLower.includes('users') && userQueryLower.includes('older than')) {
+    // Handle connection testing query specifically
+    if (userQueryLower.includes('first row') && userQueryLower.includes('any table')) {
+      // For connection testing, just return a simple query that works on any database
+      return 'SELECT 1 AS connection_test;';
+    } else if (userQueryLower.includes('users') && userQueryLower.includes('older than')) {
       return 'SELECT * FROM users WHERE age > 30;';
     } else if (userQueryLower.includes('products') && userQueryLower.includes('electronics')) {
       return isPostgres
@@ -146,10 +150,11 @@ Remember:${dbSpecificInstructions}
     } else {
       // Default query if no pattern matches
       const tables = Object.keys(schema);
-      if (tables.length > 0) {
+      if (tables && tables.length > 0) {
         return `SELECT * FROM ${tables[0]} LIMIT 10;`;
       } else {
-        return 'SELECT 1;';
+        // Safe fallback when no tables are available
+        return 'SELECT 1 AS no_tables_available;';
       }
     }
   }

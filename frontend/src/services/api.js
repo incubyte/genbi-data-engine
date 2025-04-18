@@ -14,11 +14,12 @@ class ApiService {
   async testConnection(connectionInfo) {
     try {
       // For testing connection, we'll use a simple query that should work on any database
+      // This query is specifically handled in the backend to avoid table-specific operations
       const response = await axios.post(`${API_URL}/query`, {
-        userQuery: 'Show me the first row of any table',
+        userQuery: 'Show me the first row of any table - CONNECTION TEST',
         connection: connectionInfo
       });
-      
+
       return {
         success: true,
         data: response.data
@@ -43,7 +44,7 @@ class ApiService {
         userQuery,
         connection: connectionInfo
       });
-      
+
       return {
         success: true,
         data: response.data.data

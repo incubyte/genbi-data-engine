@@ -45,11 +45,22 @@ class QueryController {
       // Get database type
       const dbType = dbService.getDatabaseType();
 
-      // Generate SQL query using Anthropic
-      const sqlQuery = await anthropicService.generateSqlQuery(userQuery, schema, dbType);
+      // Check if this is a connection test query
+      const isConnectionTest = userQuery.toLowerCase().includes('connection test');
 
-      // Execute the generated SQL query
-      const results = await dbService.executeQuery(db, sqlQuery);
+      let sqlQuery, results;
+
+      if (isConnectionTest) {
+        // For connection tests, use a simple query that works on any database
+        sqlQuery = 'SELECT 1 AS connection_test';
+        results = await dbService.executeQuery(db, sqlQuery);
+      } else {
+        // Generate SQL query using Anthropic for regular queries
+        sqlQuery = await anthropicService.generateSqlQuery(userQuery, schema, dbType);
+
+        // Execute the generated SQL query
+        results = await dbService.executeQuery(db, sqlQuery);
+      }
 
       // Return the results and the generated SQL query
       res.status(200).json({
