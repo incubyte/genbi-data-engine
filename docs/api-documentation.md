@@ -1,5 +1,7 @@
 # GenBI Data Engine API Documentation
 
+_Version: 1.0.0 (Last updated: April 2025)_
+
 This document provides comprehensive documentation for the GenBI Data Engine API.
 
 ## Table of Contents

@@ -94,66 +94,75 @@ const SavedQueries = ({ onSelectQuery }) => {
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6" component="h3">
+    <Paper elevation={3} sx={{ p: 3, mb: 4, boxShadow: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h6" component="h3" sx={{ fontWeight: 'bold' }}>
           Saved Queries
         </Typography>
-        <IconButton onClick={toggleExpanded}>
+        <IconButton onClick={toggleExpanded} sx={{ bgcolor: 'background.dark', '&:hover': { bgcolor: 'background.dark' } }}>
           {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
         </IconButton>
       </Box>
 
       <Collapse in={expanded}>
         {queries.length === 0 ? (
-          <Typography variant="body2" color="textSecondary">
-            No saved queries yet. Save a query to see it here.
-          </Typography>
+          <Box sx={{ p: 3, textAlign: 'center', bgcolor: 'background.dark', borderRadius: 1 }}>
+            <Typography variant="body1" color="text.secondary">
+              No saved queries yet. Save a query to see it here.
+            </Typography>
+          </Box>
         ) : (
-          <List>
+          <List sx={{ bgcolor: 'background.paper', borderRadius: 1, overflow: 'hidden' }}>
             {queries.map((query, index) => (
               <React.Fragment key={query.id}>
-                {index > 0 && <Divider />}
+                {index > 0 && <Divider sx={{ my: 0.5 }} />}
                 <ListItem
                   button
                   onClick={() => handleSelectQuery(query)}
                   sx={{
+                    py: 1.5,
+                    px: 2,
                     '&:hover': {
-                      backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                    }
+                      backgroundColor: 'background.dark'
+                    },
+                    borderRadius: 1,
+                    mb: 0.5
                   }}
                 >
                   <ListItemText
-                    primary={query.name}
+                    primary={<Typography variant="subtitle1" sx={{ fontWeight: 500 }}>{query.name}</Typography>}
                     secondary={
-                      <>
-                        <Typography component="span" variant="body2" color="textPrimary">
+                      <Box sx={{ mt: 0.5 }}>
+                        <Typography component="div" variant="body2" color="text.primary" sx={{ mb: 0.5 }}>
                           {query.query.length > 60 ? `${query.query.substring(0, 60)}...` : query.query}
                         </Typography>
-                        <Typography component="span" variant="body2" color="textSecondary" sx={{ display: 'block' }}>
+                        <Typography component="div" variant="body2" color="text.secondary">
                           Saved on {formatDate(query.created_at)}
                           {query.connection_name && ` • ${query.connection_name}`}
                         </Typography>
-                      </>
+                      </Box>
                     }
+                    sx={{ mr: 6 }} // Make room for the buttons
                   />
-                  <Box sx={{ display: 'flex', position: 'absolute', right: 16 }}>
+                  <Box sx={{ display: 'flex', position: 'absolute', right: 16, gap: 1 }}>
                     <Tooltip title="Run this query">
                       <IconButton
-                        edge="end"
+                        size="small"
                         onClick={() => handleSelectQuery(query)}
                         color="primary"
+                        sx={{ bgcolor: 'primary.light', color: 'white', '&:hover': { bgcolor: 'primary.main' } }}
                       >
-                        <SendIcon />
+                        <SendIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Delete query">
                       <IconButton
-                        edge="end"
+                        size="small"
                         onClick={(e) => handleOpenDeleteDialog(e, query)}
                         color="error"
+                        sx={{ bgcolor: 'error.light', color: 'white', '&:hover': { bgcolor: 'error.main' } }}
                       >
-                        <DeleteIcon />
+                        <DeleteIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
                   </Box>

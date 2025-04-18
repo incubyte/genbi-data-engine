@@ -1,5 +1,7 @@
 # GenBI - AI-Powered Business Intelligence
 
+_Version: 1.0.0 (Last updated: April 2025)_
+
 GenBI is an AI-powered Business Intelligence platform that turns natural language questions into powerful analytics. It consists of a Node.js backend API that interfaces with Anthropic's API to generate SQL queries from natural language, and a React frontend that provides a user-friendly interface for connecting to databases and querying them.
 
 ## Table of Contents
@@ -248,6 +250,7 @@ Detailed documentation is available in the `docs` directory:
 - [API Documentation](docs/api-documentation.md): Documentation for the REST API
 - [User Guide](docs/user-guide.md): Guide for end users
 - [Developer Guide](docs/developer-guide.md): Guide for developers
+- [Documentation Maintenance Guide](docs/documentation-maintenance.md): Guide for maintaining documentation
 
 ## License
 

@@ -120,20 +120,20 @@ const QueryInterface = ({ connectionInfo: propConnectionInfo, onQueryResults }) 
     <ErrorBoundary>
       <Container maxWidth="md">
         <Box sx={{ my: 4 }}>
-          <Typography variant="h4" component="h1" gutterBottom align="center">
+          <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', mb: 2 }}>
             Ask Questions About Your Data
           </Typography>
 
-          <Typography variant="body1" sx={{ mb: 4, textAlign: 'center' }}>
+          <Typography variant="body1" sx={{ mb: 4, textAlign: 'center', fontSize: '1.1rem', color: 'text.secondary' }}>
             Ask questions in plain English and get instant insights from your data.
           </Typography>
 
           {renderNoConnectionWarning()}
 
           {activeConnectionInfo && (
-            <Paper sx={{ p: 2, mb: 3, display: 'flex', alignItems: 'center' }}>
-              <DatabaseIcon color="primary" sx={{ mr: 1 }} />
-              <Typography variant="body2">
+            <Paper sx={{ p: 3, mb: 4, display: 'flex', alignItems: 'center', boxShadow: 2, borderLeft: 4, borderColor: 'primary.main' }}>
+              <DatabaseIcon color="primary" sx={{ mr: 2, fontSize: 28 }} />
+              <Typography variant="body1">
                 Connected to: <strong>
                   {(() => {
                     if (!activeConnectionInfo) return 'Unknown';

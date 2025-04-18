@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import {
   Box,
   Paper,
@@ -46,16 +47,16 @@ const DataTable = ({ data }) => {
     if (value === null || value === undefined) {
       return 'NULL';
     }
-    
+
     if (typeof value === 'object') {
       return JSON.stringify(value);
     }
-    
+
     return String(value);
   };
 
   return (
-    <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+    <Paper sx={{ width: '100%', overflow: 'hidden', boxShadow: 3, borderRadius: 2 }}>
       <TableContainer sx={{ maxHeight: 440 }}>
         <Table stickyHeader aria-label="data results table">
           <TableHead>
@@ -63,10 +64,14 @@ const DataTable = ({ data }) => {
               {columns.map((column) => (
                 <TableCell
                   key={column}
-                  sx={{ 
+                  sx={{
                     fontWeight: 'bold',
                     backgroundColor: 'primary.main',
-                    color: 'primary.contrastText'
+                    color: 'primary.contrastText',
+                    fontSize: '1rem',
+                    py: 2,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
                   }}
                 >
                   {column}
@@ -78,9 +83,29 @@ const DataTable = ({ data }) => {
             {data
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((row, rowIndex) => (
-                <TableRow hover key={rowIndex}>
+                <TableRow
+                  hover
+                  key={rowIndex}
+                  sx={{
+                    '&:nth-of-type(odd)': {
+                      backgroundColor: 'background.dark',
+                    },
+                    '&:hover': {
+                      backgroundColor: 'action.hover',
+                    },
+                    '&:last-child td, &:last-child th': {
+                      border: 0,
+                    },
+                  }}
+                >
                   {columns.map((column) => (
-                    <TableCell key={`${rowIndex}-${column}`}>
+                    <TableCell
+                      key={`${rowIndex}-${column}`}
+                      sx={{
+                        py: 2,
+                        fontSize: '0.95rem'
+                      }}
+                    >
                       {formatCellValue(row[column])}
                     </TableCell>
                   ))}
@@ -97,9 +122,24 @@ const DataTable = ({ data }) => {
         page={page}
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
+        sx={{
+          borderTop: 1,
+          borderColor: 'divider',
+          '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+            fontWeight: 500
+          }
+        }}
       />
     </Paper>
   );
+};
+
+DataTable.propTypes = {
+  data: PropTypes.arrayOf(PropTypes.object)
+};
+
+DataTable.defaultProps = {
+  data: []
 };
 
 export default DataTable;

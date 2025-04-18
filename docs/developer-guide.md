@@ -1,5 +1,7 @@
 # GenBI Developer Guide
 
+_Version: 1.0.0 (Last updated: April 2025)_
+
 This guide provides information for developers who want to contribute to or extend the GenBI application.
 
 ## Table of Contents
@@ -75,7 +77,7 @@ The application follows these key design principles:
    ```bash
    # In one terminal, start the backend
    npm run dev
-   
+
    # In another terminal, start the frontend
    cd frontend
    npm run dev
@@ -259,7 +261,7 @@ async newApiMethod(param1, param2) {
     const response = await axios.get(`${API_URL}/new-endpoint`, {
       params: { param1, param2 }
     });
-    
+
     return {
       success: true,
       data: response.data.data
@@ -360,14 +362,27 @@ docker run -p 3000:3000 -e ANTHROPIC_API_KEY=your_key genbi-data-engine
 3. Make your changes
 4. Write tests for your changes
 5. Run the tests to ensure they pass
-6. Commit your changes with a descriptive commit message
-7. Push your branch to your fork
-8. Create a pull request
+6. Update documentation to reflect your changes
+7. Commit your changes with a descriptive commit message
+8. Push your branch to your fork
+9. Create a pull request
 
 Please follow these guidelines when contributing:
 
 - Follow the existing code style and conventions
 - Write clear, descriptive commit messages
 - Include tests for new features or bug fixes
-- Update documentation as needed
 - Keep pull requests focused on a single feature or bug fix
+
+### Documentation Guidelines
+
+When updating documentation:
+
+1. **Version Updates**: Update the version number and date at the top of the documentation file
+2. **Code Examples**: Ensure code examples match the current implementation
+3. **API Changes**: Document any changes to API endpoints, parameters, or responses
+4. **Database Support**: Update database-related documentation when adding or modifying database support
+5. **Testing**: Update testing documentation when changing test procedures or adding new test cases
+6. **Screenshots**: Update screenshots if UI changes are made
+
+All documentation files should be kept in sync with the codebase. If you make changes to the code that affect the behavior described in the documentation, you must update the documentation as part of your pull request.

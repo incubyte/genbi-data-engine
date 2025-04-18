@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import {
   Box,
   TextField,
@@ -136,8 +137,8 @@ const QueryForm = ({ onSubmitQuery, isProcessing, initialQuery = '', disabled = 
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
-      <Typography variant="h5" component="h2" gutterBottom>
+    <Paper elevation={3} sx={{ p: 4, mb: 4, boxShadow: 3, borderRadius: 2 }}>
+      <Typography variant="h5" component="h2" gutterBottom sx={{ fontWeight: 'bold', mb: 3 }}>
         Ask a Question About Your Data
       </Typography>
 
@@ -154,54 +155,94 @@ const QueryForm = ({ onSubmitQuery, isProcessing, initialQuery = '', disabled = 
           error={!!errors.query}
           helperText={errors.query || (disabled ? 'Connect to a database first to run queries' : '')}
           placeholder="e.g., Show me monthly revenue trends broken down by product category"
-          sx={{ mb: 3 }}
+          sx={{
+            mb: 3,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 1.5,
+              fontSize: '1.1rem',
+              '& fieldset': {
+                borderWidth: 2,
+              },
+              '&:hover fieldset': {
+                borderColor: 'primary.main',
+              },
+            },
+            '& .MuiInputLabel-root': {
+              fontSize: '1.1rem',
+            }
+          }}
           disabled={disabled || isProcessing}
         />
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="body2" color="textSecondary" sx={{ display: 'flex', alignItems: 'center' }}>
-            <LightbulbIcon fontSize="small" sx={{ mr: 1 }} />
+          <Typography variant="body1" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', fontWeight: 500 }}>
+            <LightbulbIcon fontSize="small" sx={{ mr: 1, color: 'warning.main' }} />
             Try one of these examples:
           </Typography>
 
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             <Tooltip title="Save this query for later use">
-              <IconButton
-                color="primary"
-                onClick={() => setSaveDialogOpen(true)}
-                disabled={!query.trim() || isProcessing}
-              >
-                <SaveIcon />
-              </IconButton>
+              <span> {/* Wrapper to handle disabled state properly */}
+                <IconButton
+                  color="primary"
+                  onClick={() => setSaveDialogOpen(true)}
+                  disabled={!query.trim() || isProcessing}
+                  sx={{
+                    bgcolor: !query.trim() || isProcessing ? 'background.dark' : 'primary.light',
+                    color: !query.trim() || isProcessing ? 'text.disabled' : 'white',
+                    '&:hover': { bgcolor: 'primary.main' }
+                  }}
+                >
+                  <SaveIcon />
+                </IconButton>
+              </span>
             </Tooltip>
 
             <Button
               type="submit"
               variant="contained"
               color="primary"
+              size="large"
               endIcon={isProcessing ? <CircularProgress size={20} color="inherit" /> : <SendIcon />}
               disabled={isProcessing || disabled || !query.trim()}
+              sx={{
+                px: 3,
+                py: 1,
+                fontWeight: 'bold',
+                boxShadow: 2,
+                '&:hover': { boxShadow: 3 }
+              }}
             >
               {isProcessing ? 'Generating Insights...' : 'Generate Insights'}
             </Button>
           </Box>
         </Box>
 
-        <Grid container spacing={1}>
-          {EXAMPLE_QUERIES.map((exampleQuery) => (
-            <Grid item key={exampleQuery}>
-              <Chip
-                label={exampleQuery}
-                onClick={() => handleExampleClick(exampleQuery)}
-                clickable
-                color="primary"
-                variant="outlined"
-                sx={{ mb: 1 }}
-                disabled={disabled || isProcessing}
-              />
-            </Grid>
-          ))}
-        </Grid>
+        <Box sx={{ p: 2, bgcolor: 'background.dark', borderRadius: 2, mb: 2 }}>
+          <Grid container spacing={1.5}>
+            {EXAMPLE_QUERIES.map((exampleQuery) => (
+              <Grid item key={exampleQuery}>
+                <Chip
+                  label={exampleQuery}
+                  onClick={() => handleExampleClick(exampleQuery)}
+                  clickable
+                  color="primary"
+                  variant="outlined"
+                  sx={{
+                    mb: 1,
+                    py: 1.5,
+                    px: 1,
+                    borderRadius: 2,
+                    fontWeight: 500,
+                    borderWidth: 2,
+                    '&:hover': { bgcolor: 'primary.light', color: 'white', borderColor: 'primary.light' }
+                  }}
+                  disabled={disabled || isProcessing}
+                />
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
       </Box>
 
       {/* Save Query Dialog */}
@@ -236,6 +277,19 @@ const QueryForm = ({ onSubmitQuery, isProcessing, initialQuery = '', disabled = 
       />
     </Paper>
   );
+};
+
+QueryForm.propTypes = {
+  onSubmitQuery: PropTypes.func.isRequired,
+  isProcessing: PropTypes.bool,
+  initialQuery: PropTypes.string,
+  disabled: PropTypes.bool
+};
+
+QueryForm.defaultProps = {
+  isProcessing: false,
+  initialQuery: '',
+  disabled: false
 };
 
 export default QueryForm;

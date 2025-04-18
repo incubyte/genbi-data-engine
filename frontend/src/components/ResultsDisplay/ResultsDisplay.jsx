@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -33,6 +34,12 @@ const TabPanel = (props) => {
       )}
     </div>
   );
+};
+
+TabPanel.propTypes = {
+  children: PropTypes.node,
+  index: PropTypes.number.isRequired,
+  value: PropTypes.number.isRequired,
 };
 
 const ResultsDisplay = ({ results: propResults }) => {
@@ -99,28 +106,40 @@ const ResultsDisplay = ({ results: propResults }) => {
   const { results: data, sqlQuery, databaseType } = results;
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="lg">
       <Box sx={{ my: 4 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
           <Button
+            variant="outlined"
             startIcon={<ArrowBackIcon />}
             onClick={handleBackToQuery}
-            sx={{ mr: 2 }}
+            sx={{ mr: 3, px: 2, py: 1 }}
           >
             Back to Query
           </Button>
-          <Typography variant="h4" component="h1" gutterBottom>
+          <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
             Query Results
           </Typography>
         </Box>
 
-        <Paper elevation={3}>
+        <Paper elevation={3} sx={{ boxShadow: 3, borderRadius: 2, overflow: 'hidden' }}>
           <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
             <Tabs
               value={tabValue}
               onChange={handleTabChange}
               aria-label="results tabs"
               variant="fullWidth"
+              sx={{
+                bgcolor: 'background.dark',
+                '& .MuiTab-root': {
+                  py: 2,
+                  fontWeight: 600,
+                  fontSize: '1rem'
+                },
+                '& .Mui-selected': {
+                  color: 'primary.main',
+                }
+              }}
             >
               <Tab label="Results" id="results-tab-0" aria-controls="results-tabpanel-0" />
               <Tab label="Generated SQL" id="results-tab-1" aria-controls="results-tabpanel-1" />
@@ -128,12 +147,12 @@ const ResultsDisplay = ({ results: propResults }) => {
           </Box>
 
           <TabPanel value={tabValue} index={0}>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Database Type: <strong>{databaseType}</strong>
-              </Typography>
+            <Box sx={{ mb: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 500, fontSize: '1.1rem' }}>
+                  Database Type: <strong>{databaseType}</strong>
+                </Typography>
 
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
                 <ExportOptions data={data} query={sqlQuery} />
               </Box>
 
@@ -148,6 +167,18 @@ const ResultsDisplay = ({ results: propResults }) => {
       </Box>
     </Container>
   );
+};
+
+ResultsDisplay.propTypes = {
+  results: PropTypes.shape({
+    results: PropTypes.array,
+    sqlQuery: PropTypes.string,
+    databaseType: PropTypes.string
+  })
+};
+
+ResultsDisplay.defaultProps = {
+  results: null
 };
 
 export default ResultsDisplay;

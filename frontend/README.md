@@ -1,5 +1,7 @@
 # GenBI Frontend
 
+_Version: 1.0.0 (Last updated: April 2025)_
+
 This is the frontend application for GenBI, an AI-powered Business Intelligence platform that turns natural language questions into powerful analytics. The frontend provides a user-friendly interface for connecting to databases and querying them using natural language.
 
 ## Features

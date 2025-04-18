@@ -1,5 +1,7 @@
 # GenBI User Guide
 
+_Version: 1.0.0 (Last updated: April 2025)_
+
 Welcome to GenBI, an AI-powered Business Intelligence platform that allows you to query your databases using natural language.
 
 ## Table of Contents

@@ -1,5 +1,7 @@
 # Frontend Testing Guide
 
+_Version: 1.0.0 (Last updated: April 2025)_
+
 This document provides an overview of the testing setup for the GenBI frontend application.
 
 ## Testing Stack
@@ -25,6 +27,40 @@ npm run test:watch
 npm run test:coverage
 ```
 
+### Coverage Thresholds
+
+The project has the following coverage thresholds configured:
+
+- Statements: 70%
+- Branches: 70%
+- Functions: 70%
+- Lines: 70%
+
+Current coverage metrics may be below these thresholds. When adding new features or modifying existing ones, please ensure that you add appropriate tests to improve coverage.
+
+### Common Test Issues
+
+#### React act() Warnings
+
+If you see warnings about state updates not being wrapped in `act()`, make sure to properly wrap asynchronous state updates in your tests. For example:
+
+```jsx
+// Before
+fireEvent.click(button);
+expect(screen.getByText('Success')).toBeInTheDocument();
+
+// After
+fireEvent.click(button);
+await act(async () => {
+  await new Promise(resolve => setTimeout(resolve, 0));
+});
+expect(screen.getByText('Success')).toBeInTheDocument();
+```
+
+#### MUI Grid Deprecation Warnings
+
+If you see warnings about deprecated Grid props (`item`, `xs`, `sm`, `md`), update your Grid components to use the latest API according to the Material UI migration guide: https://mui.com/material-ui/migration/upgrade-to-grid-v2/
+
 ## Test Structure
 
 The tests are organized alongside the components they test. For example:
@@ -47,7 +83,7 @@ test('renders loading indicator when loading', () => {
       <div data-testid="child-content">Child Content</div>
     </LoadingIndicator>
   );
-  
+
   expect(screen.queryByTestId('child-content')).not.toBeInTheDocument();
   expect(screen.getByText('Loading...')).toBeInTheDocument();
 });
@@ -66,14 +102,14 @@ test('renders stats cards with correct data', async () => {
     success: true,
     data: [{ id: 1, name: 'Test Connection', connection: { type: 'sqlite' } }]
   });
-  
+
   render(<Dashboard />);
-  
+
   // Wait for API calls to resolve
   await waitFor(() => {
     expect(screen.getAllByText(/Database Connections/i)[0]).toBeInTheDocument();
   });
-  
+
   // Check if stats cards are displayed with correct data
   expect(screen.getByText('Database Connections')).toBeInTheDocument();
 });
