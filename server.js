@@ -64,18 +64,35 @@ const port = process.env.PORT || serverConfig.port || 3000; // Use a different p
 const app = express();
 
 // Middleware
-app.use(helmet()); // Security headers
+// Configure Helmet security headers with CORS-friendly settings
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' }
+}));
 
 // Configure CORS
-app.use(cors({
-  origin: serverConfig.corsOrigins || ['http://localhost:5173', 'http://127.0.0.1:5173'],
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, etc)
+    if (!origin) return callback(null, true);
+
+    // Check if the origin is allowed
+    const allowedOrigins = serverConfig.corsOrigins || ['http://localhost:5173', 'http://127.0.0.1:5173'];
+    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   credentials: true // Allow cookies in cross-site requests
-}));
+};
+
+app.use(cors(corsOptions));
 
 // Handle preflight requests
-app.options('*', cors());
+app.options('*', cors(corsOptions));
 
 // Parse JSON request bodies
 app.use(express.json({ limit: '1mb' }));
