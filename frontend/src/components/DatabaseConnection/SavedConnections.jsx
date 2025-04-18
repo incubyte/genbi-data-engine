@@ -24,7 +24,7 @@ import {
   ExpandLess as ExpandLessIcon,
   Link as LinkIcon
 } from '@mui/icons-material';
-import { getSavedConnections, deleteConnection } from '../../utils/storage';
+import apiService from '../../services/api';
 
 const SavedConnections = ({ onSelectConnection }) => {
   const [connections, setConnections] = useState([]);
@@ -37,10 +37,18 @@ const SavedConnections = ({ onSelectConnection }) => {
     loadSavedConnections();
   }, []);
 
-  // Load saved connections from local storage
-  const loadSavedConnections = () => {
-    const savedConnections = getSavedConnections();
-    setConnections(savedConnections);
+  // Load saved connections from backend
+  const loadSavedConnections = async () => {
+    try {
+      const result = await apiService.getSavedConnections();
+      if (result.success) {
+        setConnections(result.data);
+      } else {
+        console.error('Failed to load saved connections:', result.error);
+      }
+    } catch (error) {
+      console.error('Error loading saved connections:', error);
+    }
   };
 
   // Handle connection selection
@@ -56,28 +64,39 @@ const SavedConnections = ({ onSelectConnection }) => {
   };
 
   // Delete a saved connection
-  const handleDeleteConnection = () => {
+  const handleDeleteConnection = async () => {
     if (connectionToDelete) {
-      deleteConnection(connectionToDelete.id);
-      loadSavedConnections();
-      setDeleteDialogOpen(false);
-      setConnectionToDelete(null);
+      try {
+        const result = await apiService.deleteConnection(connectionToDelete.id);
+        if (result.success) {
+          await loadSavedConnections();
+          setDeleteDialogOpen(false);
+          setConnectionToDelete(null);
+        } else {
+          console.error('Failed to delete connection:', result.error);
+        }
+      } catch (error) {
+        console.error('Error deleting connection:', error);
+      }
     }
   };
 
   // Format connection details for display
   const formatConnectionDetails = (connection) => {
-    if (connection.type === 'sqlite') {
-      return `SQLite: ${connection.connection}`;
-    } else if (connection.type === 'postgres') {
-      const conn = connection.connection;
+    if (!connection) return 'Invalid connection';
+
+    const type = connection.type || 'unknown';
+    const conn = connection.connection || connection;
+
+    if (type === 'sqlite') {
+      return `SQLite: ${typeof conn === 'string' ? conn : JSON.stringify(conn)}`;
+    } else if (type === 'postgres') {
       if (typeof conn === 'string') {
         return `PostgreSQL: ${conn}`;
       } else {
         return `PostgreSQL: ${conn.host}:${conn.port}/${conn.database}`;
       }
-    } else if (connection.type === 'mysql') {
-      const conn = connection.connection;
+    } else if (type === 'mysql') {
       if (typeof conn === 'string') {
         return `MySQL: ${conn}`;
       } else {
@@ -124,7 +143,7 @@ const SavedConnections = ({ onSelectConnection }) => {
                 >
                   <ListItemText
                     primary={connection.name}
-                    secondary={formatConnectionDetails(connection.connection)}
+                    secondary={formatConnectionDetails(connection)}
                   />
                   <ListItemSecondaryAction>
                     <Tooltip title="Use this connection">

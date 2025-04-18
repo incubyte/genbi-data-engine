@@ -24,7 +24,7 @@ import {
   ExpandLess as ExpandLessIcon,
   Send as SendIcon
 } from '@mui/icons-material';
-import { getSavedQueries, deleteQuery } from '../../utils/storage';
+import apiService from '../../services/api';
 
 const SavedQueries = ({ onSelectQuery }) => {
   const [queries, setQueries] = useState([]);
@@ -37,10 +37,18 @@ const SavedQueries = ({ onSelectQuery }) => {
     loadSavedQueries();
   }, []);
 
-  // Load saved queries from local storage
-  const loadSavedQueries = () => {
-    const savedQueries = getSavedQueries();
-    setQueries(savedQueries);
+  // Load saved queries from backend
+  const loadSavedQueries = async () => {
+    try {
+      const result = await apiService.getSavedQueries();
+      if (result.success) {
+        setQueries(result.data);
+      } else {
+        console.error('Failed to load saved queries:', result.error);
+      }
+    } catch (error) {
+      console.error('Error loading saved queries:', error);
+    }
   };
 
   // Handle query selection
@@ -56,12 +64,20 @@ const SavedQueries = ({ onSelectQuery }) => {
   };
 
   // Delete a saved query
-  const handleDeleteQuery = () => {
+  const handleDeleteQuery = async () => {
     if (queryToDelete) {
-      deleteQuery(queryToDelete.id);
-      loadSavedQueries();
-      setDeleteDialogOpen(false);
-      setQueryToDelete(null);
+      try {
+        const result = await apiService.deleteQuery(queryToDelete.id);
+        if (result.success) {
+          await loadSavedQueries();
+          setDeleteDialogOpen(false);
+          setQueryToDelete(null);
+        } else {
+          console.error('Failed to delete query:', result.error);
+        }
+      } catch (error) {
+        console.error('Error deleting query:', error);
+      }
     }
   };
 
@@ -86,7 +102,7 @@ const SavedQueries = ({ onSelectQuery }) => {
           {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
         </IconButton>
       </Box>
-      
+
       <Collapse in={expanded}>
         {queries.length === 0 ? (
           <Typography variant="body2" color="textSecondary">
@@ -97,13 +113,13 @@ const SavedQueries = ({ onSelectQuery }) => {
             {queries.map((query, index) => (
               <React.Fragment key={query.id}>
                 {index > 0 && <Divider />}
-                <ListItem 
-                  button 
+                <ListItem
+                  button
                   onClick={() => handleSelectQuery(query)}
-                  sx={{ 
-                    '&:hover': { 
-                      backgroundColor: 'rgba(0, 0, 0, 0.04)' 
-                    } 
+                  sx={{
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                    }
                   }}
                 >
                   <ListItemText
@@ -114,15 +130,16 @@ const SavedQueries = ({ onSelectQuery }) => {
                           {query.query.length > 60 ? `${query.query.substring(0, 60)}...` : query.query}
                         </Typography>
                         <Typography component="span" variant="body2" color="textSecondary" sx={{ display: 'block' }}>
-                          Saved on {formatDate(query.createdAt)}
+                          Saved on {formatDate(query.created_at)}
+                          {query.connection_name && ` • ${query.connection_name}`}
                         </Typography>
                       </>
                     }
                   />
                   <ListItemSecondaryAction>
                     <Tooltip title="Run this query">
-                      <IconButton 
-                        edge="end" 
+                      <IconButton
+                        edge="end"
                         onClick={() => handleSelectQuery(query)}
                         color="primary"
                       >
@@ -130,8 +147,8 @@ const SavedQueries = ({ onSelectQuery }) => {
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Delete query">
-                      <IconButton 
-                        edge="end" 
+                      <IconButton
+                        edge="end"
                         onClick={(e) => handleOpenDeleteDialog(e, query)}
                         color="error"
                       >
@@ -154,7 +171,7 @@ const SavedQueries = ({ onSelectQuery }) => {
         <DialogTitle>Delete Query</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete the query "{queryToDelete?.name}"? 
+            Are you sure you want to delete the query "{queryToDelete?.name}"?
             This action cannot be undone.
           </DialogContentText>
         </DialogContent>

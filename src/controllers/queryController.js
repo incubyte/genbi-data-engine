@@ -1,10 +1,11 @@
 const databaseFactory = require('../services/databaseFactory');
 const anthropicService = require('../services/anthropicService');
+const userDataService = require('../services/userDataService');
 const logger = require('../utils/logger');
 const { ApiError } = require('../utils/errorHandler');
 
 /**
- * Controller for handling natural language to SQL query conversion
+ * Controller for handling natural language to SQL query conversion and saved queries
  */
 class QueryController {
   /**
@@ -78,6 +79,109 @@ class QueryController {
       if (db && dbService) {
         dbService.closeConnection(db);
       }
+    }
+  }
+  /**
+   * Get all saved queries
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   * @param {Function} next - Express next middleware function
+   */
+  async getAllQueries(req, res, next) {
+    try {
+      logger.info('Getting all saved queries');
+
+      const queries = await userDataService.getSavedQueries();
+
+      res.status(200).json({
+        status: 'success',
+        data: {
+          queries
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get a saved query by ID
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   * @param {Function} next - Express next middleware function
+   */
+  async getQueryById(req, res, next) {
+    try {
+      const { id } = req.params;
+
+      logger.info(`Getting query with ID: ${id}`);
+
+      const query = await userDataService.getSavedQueryById(id);
+
+      res.status(200).json({
+        status: 'success',
+        data: {
+          query
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Save a new query
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   * @param {Function} next - Express next middleware function
+   */
+  async saveQuery(req, res, next) {
+    try {
+      const { name, query, connection_id } = req.body;
+
+      if (!name || !query) {
+        throw new ApiError(400, 'Name and query are required');
+      }
+
+      logger.info(`Saving new query: ${name}`);
+
+      const savedQuery = await userDataService.saveQuery({
+        name,
+        query,
+        connection_id
+      });
+
+      res.status(201).json({
+        status: 'success',
+        data: {
+          query: savedQuery
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Delete a saved query
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   * @param {Function} next - Express next middleware function
+   */
+  async deleteQuery(req, res, next) {
+    try {
+      const { id } = req.params;
+
+      logger.info(`Deleting query with ID: ${id}`);
+
+      await userDataService.deleteQuery(id);
+
+      res.status(200).json({
+        status: 'success',
+        message: `Query with ID ${id} deleted successfully`
+      });
+    } catch (error) {
+      next(error);
     }
   }
 }

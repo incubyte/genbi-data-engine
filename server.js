@@ -5,12 +5,20 @@ const dotenv = require('dotenv');
 const logger = require('./src/utils/logger');
 const { errorHandler, setupErrorHandlers } = require('./src/utils/errorHandler');
 const queryController = require('./src/controllers/queryController');
+const connectionController = require('./src/controllers/connectionController');
+const userDataService = require('./src/services/userDataService');
 
 // Load environment variables
 dotenv.config();
 
 // Set up global error handlers
 setupErrorHandlers();
+
+// Initialize user data service
+userDataService.init().catch(err => {
+  logger.error('Failed to initialize user data service:', err);
+  process.exit(1);
+});
 
 // Create Express app
 const app = express();
@@ -37,6 +45,18 @@ app.get('/', (req, res) => {
 
 // Main endpoint for natural language to SQL conversion
 app.post('/api/query', queryController.processQuery);
+
+// Saved connections endpoints
+app.get('/api/connections', connectionController.getAllConnections);
+app.get('/api/connections/:id', connectionController.getConnectionById);
+app.post('/api/connections', connectionController.saveConnection);
+app.delete('/api/connections/:id', connectionController.deleteConnection);
+
+// Saved queries endpoints
+app.get('/api/saved-queries', queryController.getAllQueries);
+app.get('/api/saved-queries/:id', queryController.getQueryById);
+app.post('/api/saved-queries', queryController.saveQuery);
+app.delete('/api/saved-queries/:id', queryController.deleteQuery);
 
 // 404 handler
 app.use((req, res) => {

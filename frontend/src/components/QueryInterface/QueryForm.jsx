@@ -23,7 +23,7 @@ import {
   Lightbulb as LightbulbIcon
 } from '@mui/icons-material';
 import { validateQueryForm } from '../../utils/validation';
-import { saveQuery } from '../../utils/storage';
+import apiService from '../../services/api';
 
 // Example queries to suggest to the user
 const EXAMPLE_QUERIES = [
@@ -34,8 +34,8 @@ const EXAMPLE_QUERIES = [
   'Which products have the highest profit margin?'
 ];
 
-const QueryForm = ({ onSubmitQuery, isProcessing }) => {
-  const [query, setQuery] = useState('');
+const QueryForm = ({ onSubmitQuery, isProcessing, initialQuery = '' }) => {
+  const [query, setQuery] = useState(initialQuery);
   const [errors, setErrors] = useState({});
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [queryName, setQueryName] = useState('');
@@ -48,7 +48,7 @@ const QueryForm = ({ onSubmitQuery, isProcessing }) => {
   // Handle query input change
   const handleQueryChange = (e) => {
     setQuery(e.target.value);
-    
+
     // Clear error if it exists
     if (errors.query) {
       setErrors({});
@@ -58,14 +58,14 @@ const QueryForm = ({ onSubmitQuery, isProcessing }) => {
   // Handle form submission
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     // Validate query
     const validation = validateQueryForm(query);
     if (!validation.isValid) {
       setErrors(validation.errors);
       return;
     }
-    
+
     // Submit query to parent component
     onSubmitQuery(query);
   };
@@ -77,7 +77,7 @@ const QueryForm = ({ onSubmitQuery, isProcessing }) => {
   };
 
   // Handle save query
-  const handleSaveQuery = () => {
+  const handleSaveQuery = async () => {
     if (!queryName.trim()) {
       setNotification({
         open: true,
@@ -86,18 +86,34 @@ const QueryForm = ({ onSubmitQuery, isProcessing }) => {
       });
       return;
     }
-    
-    // Save query to local storage
-    saveQuery(query, queryName);
-    
-    // Close dialog and show success notification
-    setSaveDialogOpen(false);
-    setQueryName('');
-    setNotification({
-      open: true,
-      message: 'Query saved successfully',
-      severity: 'success'
-    });
+
+    // Save query to backend
+    try {
+      const result = await apiService.saveQuery(query, queryName);
+
+      if (result.success) {
+        // Close dialog and show success notification
+        setSaveDialogOpen(false);
+        setQueryName('');
+        setNotification({
+          open: true,
+          message: 'Query saved successfully',
+          severity: 'success'
+        });
+      } else {
+        setNotification({
+          open: true,
+          message: `Failed to save query: ${result.error}`,
+          severity: 'error'
+        });
+      }
+    } catch (error) {
+      setNotification({
+        open: true,
+        message: `Error saving query: ${error.message}`,
+        severity: 'error'
+      });
+    }
   };
 
   // Close notification
@@ -113,7 +129,7 @@ const QueryForm = ({ onSubmitQuery, isProcessing }) => {
       <Typography variant="h5" component="h2" gutterBottom>
         Ask a Question About Your Data
       </Typography>
-      
+
       <Box component="form" onSubmit={handleSubmit} noValidate>
         <TextField
           fullWidth
@@ -129,24 +145,24 @@ const QueryForm = ({ onSubmitQuery, isProcessing }) => {
           placeholder="e.g., Show me monthly revenue trends broken down by product category"
           sx={{ mb: 3 }}
         />
-        
+
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="body2" color="textSecondary" sx={{ display: 'flex', alignItems: 'center' }}>
             <LightbulbIcon fontSize="small" sx={{ mr: 1 }} />
             Try one of these examples:
           </Typography>
-          
+
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             <Tooltip title="Save this query for later use">
-              <IconButton 
-                color="primary" 
+              <IconButton
+                color="primary"
                 onClick={() => setSaveDialogOpen(true)}
                 disabled={!query.trim() || isProcessing}
               >
                 <SaveIcon />
               </IconButton>
             </Tooltip>
-            
+
             <Button
               type="submit"
               variant="contained"
@@ -158,7 +174,7 @@ const QueryForm = ({ onSubmitQuery, isProcessing }) => {
             </Button>
           </Box>
         </Box>
-        
+
         <Grid container spacing={1}>
           {EXAMPLE_QUERIES.map((exampleQuery, index) => (
             <Grid item key={index}>
@@ -174,7 +190,7 @@ const QueryForm = ({ onSubmitQuery, isProcessing }) => {
           ))}
         </Grid>
       </Box>
-      
+
       {/* Save Query Dialog */}
       <Dialog open={saveDialogOpen} onClose={() => setSaveDialogOpen(false)}>
         <DialogTitle>Save Query</DialogTitle>
@@ -195,15 +211,15 @@ const QueryForm = ({ onSubmitQuery, isProcessing }) => {
           <Button onClick={handleSaveQuery} color="primary">Save</Button>
         </DialogActions>
       </Dialog>
-      
+
       {/* Notification Snackbar */}
       <Snackbar
         open={notification.open}
         autoHideDuration={6000}
         onClose={handleCloseNotification}
       >
-        <Alert 
-          onClose={handleCloseNotification} 
+        <Alert
+          onClose={handleCloseNotification}
           severity={notification.severity}
           sx={{ width: '100%' }}
         >

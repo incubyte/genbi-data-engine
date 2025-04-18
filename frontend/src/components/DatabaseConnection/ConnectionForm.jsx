@@ -19,7 +19,7 @@ import {
   CircularProgress
 } from '@mui/material';
 import { validateConnectionForm } from '../../utils/validation';
-import { saveConnection } from '../../utils/storage';
+
 import apiService from '../../services/api';
 
 const ConnectionForm = ({ onConnectionEstablished }) => {
@@ -148,7 +148,7 @@ const ConnectionForm = ({ onConnectionEstablished }) => {
   };
 
   // Handle save connection
-  const handleSaveConnection = () => {
+  const handleSaveConnection = async () => {
     if (!connectionName.trim()) {
       setNotification({
         open: true,
@@ -158,18 +158,34 @@ const ConnectionForm = ({ onConnectionEstablished }) => {
       return;
     }
 
-    // Save connection to local storage
+    // Save connection to backend
     const connectionInfo = prepareConnectionInfo();
-    saveConnection(connectionInfo, connectionName);
+    try {
+      const result = await apiService.saveConnection(connectionInfo, connectionName);
 
-    // Close dialog and show success notification
-    setSaveDialogOpen(false);
-    setConnectionName('');
-    setNotification({
-      open: true,
-      message: 'Connection saved successfully',
-      severity: 'success'
-    });
+      if (result.success) {
+        // Close dialog and show success notification
+        setSaveDialogOpen(false);
+        setConnectionName('');
+        setNotification({
+          open: true,
+          message: 'Connection saved successfully',
+          severity: 'success'
+        });
+      } else {
+        setNotification({
+          open: true,
+          message: `Failed to save connection: ${result.error}`,
+          severity: 'error'
+        });
+      }
+    } catch (error) {
+      setNotification({
+        open: true,
+        message: `Error saving connection: ${error.message}`,
+        severity: 'error'
+      });
+    }
   };
 
   // Handle form submission
