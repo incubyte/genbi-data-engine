@@ -3,6 +3,7 @@ const anthropicService = require('../services/anthropicService');
 const userDataService = require('../services/userDataService');
 const logger = require('../utils/logger');
 const { ApiError } = require('../utils/errorHandler');
+const { validateUserQuery } = require('../utils/validationService');
 
 /**
  * Controller for handling natural language to SQL query conversion and saved queries
@@ -17,13 +18,16 @@ class QueryController {
   async processQuery(req, res, next) {
     let db = null;
     let dbService = null;
+    let connectionInfo = null;
 
     try {
       // Validate request body
       const { userQuery, connection } = req.body;
 
-      if (!userQuery) {
-        throw new ApiError(400, 'User query is required');
+      // Validate user query
+      const queryValidation = validateUserQuery(userQuery);
+      if (!queryValidation.isValid) {
+        throw new ApiError(400, 'Invalid user query', true, '', queryValidation.errors);
       }
 
       if (!connection) {
@@ -36,6 +40,9 @@ class QueryController {
       // Parse connection info and create appropriate database service
       const connectionInfo = databaseFactory.parseConnectionInfo(connection);
       dbService = databaseFactory.createDatabaseService(connectionInfo);
+
+      // Generate a simple connection ID for caching
+      const connectionId = `${connectionInfo.type}-${Date.now()}`;
 
       // Connect to the database
       db = await dbService.connect(connectionInfo.connection);
@@ -54,13 +61,16 @@ class QueryController {
       if (isConnectionTest) {
         // For connection tests, use a simple query that works on any database
         sqlQuery = 'SELECT 1 AS connection_test';
-        results = await dbService.executeQuery(db, sqlQuery);
+        results = await dbService.executeQuery(db, sqlQuery, [], { useCache: false });
       } else {
         // Generate SQL query using Anthropic for regular queries
         sqlQuery = await anthropicService.generateSqlQuery(userQuery, schema, dbType);
 
-        // Execute the generated SQL query
-        results = await dbService.executeQuery(db, sqlQuery);
+        // Execute the generated SQL query with caching
+        results = await dbService.executeQuery(db, sqlQuery, [], {
+          useCache: true,
+          connectionId
+        });
       }
 
       // Return the results and the generated SQL query
@@ -77,10 +87,11 @@ class QueryController {
     } finally {
       // Close the database connection
       if (db && dbService) {
-        dbService.closeConnection(db);
+        dbService.closeConnection(db, connectionInfo?.connection);
       }
     }
   }
+
   /**
    * Get all saved queries
    * @param {Object} req - Express request object

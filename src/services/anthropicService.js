@@ -1,19 +1,25 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const logger = require('../utils/logger');
-const { ApiError } = require('../utils/errorHandler');
+const config = require('../config/config');
+const { ApiError, ValidationError } = require('../utils/errorHandler');
+const { validateUserQuery } = require('../utils/validationService');
 
 /**
  * Service for interacting with Anthropic's API
  */
 class AnthropicService {
   constructor() {
-    if (!process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY === 'your_anthropic_api_key_here') {
+    // Get API configuration
+    const apiConfig = config.getApiConfig().anthropic;
+
+    if (!apiConfig.apiKey || apiConfig.apiKey === 'your_anthropic_api_key_here') {
       logger.warn('Anthropic API key not provided or using placeholder. Using mock mode.');
       this.mockMode = true;
     } else {
       this.client = new Anthropic({
-        apiKey: process.env.ANTHROPIC_API_KEY,
+        apiKey: apiConfig.apiKey,
       });
+      this.model = apiConfig.model;
       this.mockMode = false;
       logger.info('Anthropic client initialized');
     }
@@ -28,6 +34,12 @@ class AnthropicService {
    */
   async generateSqlQuery(userQuery, schema, dbType = 'sqlite') {
     try {
+      // Validate user query
+      const validation = validateUserQuery(userQuery);
+      if (!validation.isValid) {
+        throw new ValidationError('Invalid user query', validation.errors);
+      }
+
       logger.info('Generating SQL query from natural language');
       logger.debug('User query:', userQuery);
 
@@ -82,7 +94,7 @@ Remember:${dbSpecificInstructions}
 
       // Make the API call to Anthropic
       const response = await this.client.messages.create({
-        model: 'claude-3-opus-20240229',
+        model: this.model,
         max_tokens: 1000,
         system: systemPrompt,
         messages: [
@@ -97,8 +109,23 @@ Remember:${dbSpecificInstructions}
 
       return sqlQuery;
     } catch (error) {
-      logger.error('Error generating SQL query:', error);
-      throw new ApiError(500, `Failed to generate SQL query: ${error.message}`);
+      // Handle different types of errors
+      if (error instanceof ValidationError) {
+        // Pass through validation errors
+        throw error;
+      } else if (error.status && error.status >= 400) {
+        // Handle Anthropic API errors
+        logger.error('Anthropic API error:', {
+          status: error.status,
+          message: error.message,
+          type: error.type
+        });
+        throw new ApiError(500, `Anthropic API error: ${error.message}`);
+      } else {
+        // Handle other errors
+        logger.error('Error generating SQL query:', error);
+        throw new ApiError(500, `Failed to generate SQL query: ${error.message}`);
+      }
     }
   }
 

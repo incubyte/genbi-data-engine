@@ -3,47 +3,47 @@ const { promisify } = require('util');
 const fs = require('fs');
 const path = require('path');
 const logger = require('../utils/logger');
+const config = require('../config/config');
+const { createDatabaseError } = require('../utils/errorHandler');
 
-// Database file path
-const dbDir = path.join(__dirname, '..', '..', 'data');
-const dbPath = path.join(dbDir, 'user-data.db');
+// Get database configuration
+const dbConfig = config.getDatabaseConfig();
+const dbPath = dbConfig.userDataPath;
+const dbDir = path.dirname(dbPath);
 
 /**
  * Initialize the user data database
  * @returns {Promise<void>}
  */
 async function initUserDatabase() {
-  // Create data directory if it doesn't exist
-  if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
-    logger.info(`Created data directory at ${dbDir}`);
-  }
+  // Data directory is created by the config service
 
   // Check if database already exists
   const dbExists = fs.existsSync(dbPath);
-  
+
   // Create a new database connection
   const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
-      logger.error(`Error connecting to user database: ${err.message}`);
-      throw err;
+      const errorMsg = `Error connecting to user database: ${err.message}`;
+      logger.error(errorMsg);
+      throw createDatabaseError(errorMsg, { path: dbPath });
     }
     logger.info(`Connected to the user database at ${dbPath}`);
   });
-  
+
   // Promisify database methods
   db.runAsync = promisify(db.run).bind(db);
   db.allAsync = promisify(db.all).bind(db);
   db.getAsync = promisify(db.get).bind(db);
-  
+
   try {
     // Enable foreign keys
     await db.runAsync('PRAGMA foreign_keys = ON');
-    
+
     // Only create tables if the database doesn't exist
     if (!dbExists) {
       logger.info('Creating user database tables...');
-      
+
       // Create saved_connections table
       await db.runAsync(`
         CREATE TABLE saved_connections (
@@ -55,7 +55,7 @@ async function initUserDatabase() {
         )
       `);
       logger.info('Created saved_connections table');
-      
+
       // Create saved_queries table
       await db.runAsync(`
         CREATE TABLE saved_queries (
@@ -68,16 +68,17 @@ async function initUserDatabase() {
         )
       `);
       logger.info('Created saved_queries table');
-      
+
       logger.info('User database initialization complete');
     } else {
       logger.info('User database already exists, skipping initialization');
     }
-    
+
     return db;
   } catch (error) {
-    logger.error('Error initializing user database:', error);
-    throw error;
+    const errorMsg = `Error initializing user database: ${error.message}`;
+    logger.error(errorMsg, { error });
+    throw createDatabaseError(errorMsg, { path: dbPath });
   }
 }
 

@@ -1,33 +1,101 @@
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const logger = require('./src/utils/logger');
+const config = require('./src/config/config');
 const { errorHandler, setupErrorHandlers } = require('./src/utils/errorHandler');
 const queryController = require('./src/controllers/queryController');
 const connectionController = require('./src/controllers/connectionController');
 const userDataService = require('./src/services/userDataService');
-
-// Load environment variables
-dotenv.config();
+const connectionPoolManager = require('./src/services/connectionPoolManager');
 
 // Set up global error handlers
 setupErrorHandlers();
 
-// Initialize user data service
-userDataService.init().catch(err => {
-  logger.error('Failed to initialize user data service:', err);
+// Patch path-to-regexp error
+process.on('uncaughtException', (error) => {
+  if (error.message && error.message.includes('pathToRegexpError')) {
+    logger.error('Path-to-regexp error detected:', error);
+    // Continue execution instead of crashing
+  } else {
+    // Re-throw other errors
+    throw error;
+  }
+});
+
+// Initialize services
+Promise.all([
+  userDataService.init().catch(err => {
+    logger.error('Failed to initialize user data service:', err);
+    throw err;
+  })
+]).catch(err => {
+  logger.error('Failed to initialize services:', err);
   process.exit(1);
 });
 
+// Handle graceful shutdown
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
+
+/**
+ * Graceful shutdown function
+ */
+async function gracefulShutdown() {
+  logger.info('Received shutdown signal, closing connections...');
+
+  try {
+    // Close all database connections
+    await connectionPoolManager.closeAllConnections();
+    logger.info('All database connections closed');
+
+    process.exit(0);
+  } catch (error) {
+    logger.error('Error during graceful shutdown:', error);
+    process.exit(1);
+  }
+}
+
+// Get server configuration
+const serverConfig = config.getServerConfig();
+const port = process.env.PORT || serverConfig.port || 3000; // Use a different port if 3000 is in use
+
 // Create Express app
 const app = express();
-const port = process.env.PORT || 3000;
 
 // Middleware
-app.use(helmet()); // Security headers
-app.use(cors()); // Enable CORS
-app.use(express.json()); // Parse JSON request bodies
+// Configure Helmet security headers with CORS-friendly settings
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' }
+}));
+
+// Configure CORS
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, etc)
+    if (!origin) return callback(null, true);
+
+    // Check if the origin is allowed
+    const allowedOrigins = serverConfig.corsOrigins || ['http://localhost:5173', 'http://127.0.0.1:5173'];
+    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  credentials: true // Allow cookies in cross-site requests
+};
+
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
+
+// Parse JSON request bodies
+app.use(express.json({ limit: '1mb' }));
 
 // Log all requests
 app.use((req, res, next) => {
@@ -40,6 +108,17 @@ app.get('/', (req, res) => {
   res.status(200).json({
     status: 'success',
     message: 'Welcome to the GenBI Data Engine API',
+  });
+});
+
+// Debug route
+app.get('/api/debug', (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    message: 'API is working correctly',
+    timestamp: new Date().toISOString(),
+    headers: req.headers,
+    env: process.env.NODE_ENV
   });
 });
 
@@ -69,10 +148,15 @@ app.use((req, res) => {
 // Error handling middleware
 app.use(errorHandler);
 
-// Start the server
-app.listen(port, () => {
-  logger.info(`Server running on port ${port}`);
-  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-});
+// Export for testing
+module.exports = app;
 
-module.exports = app; // Export for testing
+// Only start the server if this file is run directly
+if (require.main === module) {
+  // Start the server
+  app.listen(port, () => {
+    logger.info(`Server running on port ${port}`);
+    logger.info(`Environment: ${serverConfig.env}`);
+    logger.info(`API URL: http://localhost:${port}/api`);
+  });
+}

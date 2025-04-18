@@ -1,8 +1,8 @@
-const sqlite3 = require('sqlite3').verbose();
-const { promisify } = require('util');
 const logger = require('../../utils/logger');
 const { ApiError } = require('../../utils/errorHandler');
 const BaseDatabaseService = require('./baseDatabaseService');
+const connectionPoolManager = require('../connectionPoolManager');
+const queryCacheService = require('../queryCacheService');
 
 /**
  * SQLite database service
@@ -16,20 +16,10 @@ class SQLiteService extends BaseDatabaseService {
   async connect(connectionString) {
     try {
       logger.info(`Connecting to SQLite database: ${connectionString}`);
-      
-      // Create a new database connection
-      const db = new sqlite3.Database(connectionString, (err) => {
-        if (err) {
-          throw new ApiError(500, `Error connecting to SQLite database: ${err.message}`);
-        }
-        logger.info('Connected to the SQLite database');
-      });
-      
-      // Promisify database methods
-      db.allAsync = promisify(db.all).bind(db);
-      db.runAsync = promisify(db.run).bind(db);
-      db.getAsync = promisify(db.get).bind(db);
-      
+
+      // Get connection from pool manager
+      const db = await connectionPoolManager.getConnection('sqlite', connectionString);
+
       return db;
     } catch (error) {
       logger.error('SQLite connection error:', error);
@@ -45,27 +35,27 @@ class SQLiteService extends BaseDatabaseService {
   async extractSchema(db) {
     try {
       logger.info('Extracting SQLite database schema');
-      
+
       // Get all tables
       const tables = await db.allAsync(
         "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
       );
-      
+
       const schema = {};
-      
+
       // For each table, get its columns and foreign keys
       for (const table of tables) {
         const tableName = table.name;
-        
+
         // Get table columns
         const columns = await db.allAsync(`PRAGMA table_info(${tableName})`);
-        
+
         // Get foreign keys
         const foreignKeys = await db.allAsync(`PRAGMA foreign_key_list(${tableName})`);
-        
+
         // Get indexes
         const indexes = await db.allAsync(`PRAGMA index_list(${tableName})`);
-        
+
         schema[tableName] = {
           columns: columns.map(col => ({
             name: col.name,
@@ -90,7 +80,7 @@ class SQLiteService extends BaseDatabaseService {
           }))
         };
       }
-      
+
       logger.info('SQLite schema extraction complete');
       return schema;
     } catch (error) {
@@ -104,16 +94,42 @@ class SQLiteService extends BaseDatabaseService {
    * @param {sqlite3.Database} db - Database connection
    * @param {string} query - SQL query to execute
    * @param {Array} params - Query parameters
+   * @param {Object} options - Query options
+   * @param {boolean} options.useCache - Whether to use the query cache
+   * @param {string} options.connectionId - Connection ID for cache key
    * @returns {Promise<Array>} - Query results
    */
-  async executeQuery(db, query, params = []) {
+  async executeQuery(db, query, params = [], options = {}) {
     try {
+      const { useCache = true, connectionId = '' } = options;
+
+      // Check if query is cacheable and we should use cache
+      const isCacheable = useCache && this.isCacheableQuery(query);
+
+      // Try to get from cache first
+      if (isCacheable) {
+        const cachedResults = queryCacheService.get(query, params, connectionId);
+        if (cachedResults) {
+          logger.info(`Using cached results for SQLite query: ${query}`);
+          return cachedResults;
+        }
+      }
+
+      // Execute the query
       logger.info(`Executing SQLite query: ${query}`);
       logger.debug('Query parameters:', params);
-      
+
+      const startTime = Date.now();
       const results = await db.allAsync(query, params);
-      logger.info(`SQLite query executed successfully, returned ${results.length} rows`);
-      
+      const executionTime = Date.now() - startTime;
+
+      logger.info(`SQLite query executed successfully in ${executionTime}ms, returned ${results.length} rows`);
+
+      // Cache the results if cacheable
+      if (isCacheable) {
+        queryCacheService.set(query, params, results, connectionId);
+      }
+
       return results;
     } catch (error) {
       logger.error('SQLite query execution error:', error);
@@ -124,19 +140,16 @@ class SQLiteService extends BaseDatabaseService {
   /**
    * Close the SQLite database connection
    * @param {sqlite3.Database} db - Database connection
+   * @param {string} connectionString - Connection string used to create the connection
    */
-  closeConnection(db) {
+  closeConnection(db, connectionString) {
     if (db) {
-      db.close((err) => {
-        if (err) {
-          logger.error('Error closing SQLite database connection:', err);
-        } else {
-          logger.info('SQLite database connection closed');
-        }
-      });
+      // Release connection back to the pool
+      connectionPoolManager.releaseConnection('sqlite', db);
+      logger.debug('SQLite database connection released back to pool');
     }
   }
-  
+
   /**
    * Get the database type
    * @returns {string} - Database type

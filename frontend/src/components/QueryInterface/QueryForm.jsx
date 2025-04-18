@@ -13,10 +13,10 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  Snackbar,
-  Alert
+  DialogActions
 } from '@mui/material';
+import FeedbackMessage from '../common/FeedbackMessage';
+import LoadingIndicator from '../common/LoadingIndicator';
 import {
   Send as SendIcon,
   Save as SaveIcon,
@@ -44,6 +44,7 @@ const QueryForm = ({ onSubmitQuery, isProcessing, initialQuery = '' }) => {
     message: '',
     severity: 'info'
   });
+  const [submitting, setSubmitting] = useState(false);
 
   // Handle query input change
   const handleQueryChange = (e) => {
@@ -56,7 +57,7 @@ const QueryForm = ({ onSubmitQuery, isProcessing, initialQuery = '' }) => {
   };
 
   // Handle form submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Validate query
@@ -66,8 +67,19 @@ const QueryForm = ({ onSubmitQuery, isProcessing, initialQuery = '' }) => {
       return;
     }
 
-    // Submit query to parent component
-    onSubmitQuery(query);
+    // Submit query to parent component with loading state
+    setSubmitting(true);
+    try {
+      await onSubmitQuery(query);
+    } catch (error) {
+      setNotification({
+        open: true,
+        message: `Error processing query: ${error.message || 'Unknown error'}`,
+        severity: 'error'
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Handle example query selection
@@ -212,20 +224,15 @@ const QueryForm = ({ onSubmitQuery, isProcessing, initialQuery = '' }) => {
         </DialogActions>
       </Dialog>
 
-      {/* Notification Snackbar */}
-      <Snackbar
+      {/* Notification Feedback Message */}
+      <FeedbackMessage
         open={notification.open}
-        autoHideDuration={6000}
+        message={notification.message}
+        severity={notification.severity}
         onClose={handleCloseNotification}
-      >
-        <Alert
-          onClose={handleCloseNotification}
-          severity={notification.severity}
-          sx={{ width: '100%' }}
-        >
-          {notification.message}
-        </Alert>
-      </Snackbar>
+        autoHideDuration={6000}
+        position="bottom"
+      />
     </Paper>
   );
 };

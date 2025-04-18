@@ -1,5 +1,6 @@
 const logger = require('../../utils/logger');
 const { ApiError } = require('../../utils/errorHandler');
+const queryCacheService = require('../queryCacheService');
 
 /**
  * Base database service interface
@@ -28,10 +29,31 @@ class BaseDatabaseService {
    * @param {Object} db - Database connection
    * @param {string} query - SQL query to execute
    * @param {Array} params - Query parameters
+   * @param {Object} options - Query options
+   * @param {boolean} options.useCache - Whether to use the query cache
+   * @param {string} options.connectionId - Connection ID for cache key
    * @returns {Promise<Array>} - Query results
    */
-  async executeQuery(db, query, params = []) {
+  async executeQuery(db, query, params = [], options = {}) {
     throw new ApiError(500, 'Method not implemented');
+  }
+
+  /**
+   * Check if a query is cacheable
+   * @param {string} query - SQL query
+   * @returns {boolean} - Whether the query is cacheable
+   */
+  isCacheableQuery(query) {
+    // Only cache SELECT queries
+    const isSelect = query.trim().toUpperCase().startsWith('SELECT');
+
+    // Don't cache queries with functions that might return different results each time
+    const hasNonCacheableFunctions = [
+      'RANDOM(', 'RAND(', 'NOW(', 'CURRENT_TIMESTAMP', 'CURRENT_DATE', 'CURRENT_TIME',
+      'SYSDATE', 'GETDATE', 'NEWID', 'UUID', 'LAST_INSERT_ID'
+    ].some(func => query.toUpperCase().includes(func));
+
+    return isSelect && !hasNonCacheableFunctions;
   }
 
   /**
@@ -41,7 +63,7 @@ class BaseDatabaseService {
   closeConnection(db) {
     throw new ApiError(500, 'Method not implemented');
   }
-  
+
   /**
    * Get the database type
    * @returns {string} - Database type
