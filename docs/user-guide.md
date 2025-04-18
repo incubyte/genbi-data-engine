@@ -17,8 +17,12 @@ Welcome to GenBI, an AI-powered Business Intelligence platform that allows you t
    - [Writing Effective Queries](#writing-effective-queries)
    - [Understanding Query Results](#understanding-query-results)
    - [Saving and Managing Queries](#saving-and-managing-queries)
-5. [Troubleshooting](#troubleshooting)
-6. [FAQ](#faq)
+5. [Data Visualization](#data-visualization)
+   - [Smart Chart Selection](#smart-chart-selection)
+   - [Customizing Visualizations](#customizing-visualizations)
+   - [Exporting Charts](#exporting-charts)
+6. [Troubleshooting](#troubleshooting)
+7. [FAQ](#faq)
 
 ## Introduction
 
@@ -27,9 +31,11 @@ GenBI is a powerful tool that combines the simplicity of natural language with t
 Key features:
 - Connect to SQLite, PostgreSQL, and MySQL databases
 - Query your data using natural language
+- Automatic data visualization with smart chart selection
 - Save and manage database connections
 - Save and reuse queries
 - View query results in a user-friendly format
+- Export data and visualizations
 
 ## Getting Started
 
@@ -154,8 +160,9 @@ After submitting a query, GenBI will:
 
 The results page shows:
 - The original natural language query
+- The query results in a table format
+- Smart visualizations of your data
 - The generated SQL query
-- The query results in a table
 - Options to save the query or export the results
 
 ### Saving and Managing Queries
@@ -177,6 +184,43 @@ To delete a saved query:
 2. Find the query you want to delete
 3. Click the delete icon (trash can)
 4. Confirm the deletion
+
+## Data Visualization
+
+GenBI includes a powerful data visualization system that automatically generates appropriate charts based on your query results. This makes it easy to gain insights from your data without having to manually create charts.
+
+### Smart Chart Selection
+
+When you run a query, GenBI analyzes your data and automatically selects the most appropriate chart type:
+
+- **Line Charts**: For time series data and trends over time
+- **Bar Charts**: For comparing values across categories
+- **Pie Charts**: For showing part-to-whole relationships
+
+GenBI considers factors like data types, cardinality (number of unique values), and patterns in your data to recommend the best visualization. If multiple chart types are suitable, you can easily switch between them using the chart type selector.
+
+### Customizing Visualizations
+
+You can customize your visualizations to better suit your needs:
+
+1. Click the "Show Chart Settings" button above the chart
+2. Use the configuration panel to adjust:
+   - Data mapping (which columns to use for axes and values)
+   - Chart title and labels
+   - Appearance settings (legend position, colors, etc.)
+3. Click "Apply" to update the chart with your changes
+
+The changes you make are applied in real-time, allowing you to experiment with different configurations.
+
+### Exporting Charts
+
+You can export your visualizations for use in presentations or reports:
+
+1. Click the menu icon (three dots) in the top-right corner of the chart
+2. Select "Export as PNG" or "Export as SVG"
+3. The chart will be downloaded to your computer
+
+PNG format is best for general use, while SVG is ideal for high-quality printing or further editing in vector graphics software.
 
 ## Troubleshooting
 
@@ -215,7 +259,7 @@ GenBI uses advanced AI models to understand your questions and convert them to S
 Yes, GenBI processes your queries locally and does not send your data to external servers. Your database credentials are stored securely.
 
 ### Can I export the query results?
-Currently, GenBI displays the results in the application. Export functionality will be added in a future update.
+Yes, GenBI allows you to export your query results as CSV files. You can also export visualizations as PNG or SVG images.
 
 ### Does GenBI support joins across multiple tables?
 Yes, GenBI can generate SQL queries that join multiple tables based on your natural language query.

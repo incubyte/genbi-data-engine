@@ -10,10 +10,14 @@ import {
   Tab,
   Button
 } from '@mui/material';
-import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+import {
+  ArrowBack as ArrowBackIcon,
+  BarChart as BarChartIcon
+} from '@mui/icons-material';
 import DataTable from './DataTable';
 import SqlDisplay from './SqlDisplay';
 import ExportOptions from './ExportOptions';
+import SmartChart from '../Visualizations/SmartChart';
 
 // TabPanel component for tab content
 const TabPanel = (props) => {
@@ -142,7 +146,8 @@ const ResultsDisplay = ({ results: propResults }) => {
               }}
             >
               <Tab label="Results" id="results-tab-0" aria-controls="results-tabpanel-0" />
-              <Tab label="Generated SQL" id="results-tab-1" aria-controls="results-tabpanel-1" />
+              <Tab label="Visualizations" id="results-tab-1" aria-controls="results-tabpanel-1" icon={<BarChartIcon fontSize="small" />} iconPosition="start" />
+              <Tab label="Generated SQL" id="results-tab-2" aria-controls="results-tabpanel-2" />
             </Tabs>
           </Box>
 
@@ -161,6 +166,23 @@ const ResultsDisplay = ({ results: propResults }) => {
           </TabPanel>
 
           <TabPanel value={tabValue} index={1}>
+            <Box sx={{ mb: 3 }}>
+              <SmartChart
+                data={data}
+                initialChartType={results?.visualization?.recommendedChartTypes?.[0]}
+                recommendedConfig={{
+                  xAxis: results?.visualization?.xAxis,
+                  yAxis: results?.visualization?.yAxis,
+                  labels: results?.visualization?.xAxis,
+                  values: results?.visualization?.yAxis,
+                  title: `${results?.visualization?.yAxis || ''} by ${results?.visualization?.xAxis || ''}`
+                }}
+                recommendationReason={results?.visualization?.reasoning}
+              />
+            </Box>
+          </TabPanel>
+
+          <TabPanel value={tabValue} index={2}>
             <SqlDisplay sqlQuery={sqlQuery} />
           </TabPanel>
         </Paper>
