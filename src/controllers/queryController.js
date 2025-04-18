@@ -63,8 +63,11 @@ class QueryController {
         sqlQuery = 'SELECT 1 AS connection_test';
         results = await dbService.executeQuery(db, sqlQuery, [], { useCache: false });
       } else {
-        // Generate SQL query using Anthropic for regular queries
-        sqlQuery = await anthropicService.generateSqlQuery(userQuery, schema, dbType);
+        // Generate SQL query using Anthropic for regular queries with schema optimization
+        sqlQuery = await anthropicService.generateSqlQuery(userQuery, schema, dbType, {
+          optimizeSchema: true, 
+          maxTables: 20
+        });
 
         // Execute the generated SQL query with caching
         results = await dbService.executeQuery(db, sqlQuery, [], {

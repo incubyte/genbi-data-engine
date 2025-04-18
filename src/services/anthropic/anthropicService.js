@@ -1,6 +1,7 @@
 const logger = require('../../utils/logger');
 const { ApiError, ValidationError } = require('../../utils/errorHandler');
 const { validateUserQuery } = require('../../utils/validationService');
+const schemaExtractor = require('./schemaExtractor');
 
 /**
  * Service for interacting with Anthropic's API
@@ -29,11 +30,14 @@ class AnthropicService {
    * @param {string} userQuery - User's natural language query
    * @param {Object} schema - Database schema
    * @param {string} dbType - Database type ('sqlite', 'postgres', or 'mysql')
+   * @param {Object} options - Additional options
+   * @param {boolean} options.optimizeSchema - Whether to optimize schema for large databases (default: true)
+   * @param {number} options.maxTables - Maximum tables to include in optimized schema (default: 20)
    * @returns {Promise<string>} - Generated SQL query
    * @throws {ValidationError} - If the user query is invalid
    * @throws {ApiError} - If there is an error generating the SQL query
    */
-  async generateSqlQuery(userQuery, schema, dbType = 'sqlite') {
+  async generateSqlQuery(userQuery, schema, dbType = 'sqlite', options = {}) {
     try {
       // Validate user query
       const validation = validateUserQuery(userQuery);
@@ -44,9 +48,27 @@ class AnthropicService {
       logger.info('Generating SQL query from natural language');
       logger.debug('User query:', userQuery);
       
-      // Build the system prompt
+      // Extract relevant schema if optimization is enabled
+      const optimizeSchema = options.optimizeSchema !== false;
+      const schemaSize = Object.keys(schema).length;
+      let optimizedSchema = schema;
+      
+      if (optimizeSchema && schemaSize > 10) {
+        logger.info(`Large schema detected (${schemaSize} tables). Optimizing schema for prompt.`);
+        const startTime = Date.now();
+        
+        optimizedSchema = schemaExtractor.extractRelevantSchema(schema, userQuery, {
+          maxTables: options.maxTables || 20,
+          includeForeignKeys: true
+        });
+        
+        const extractionTime = Date.now() - startTime;
+        logger.info(`Schema optimization complete. Reduced from ${schemaSize} to ${Object.keys(optimizedSchema).length} tables in ${extractionTime}ms`);
+      }
+      
+      // Build the system prompt with the optimized schema
       const systemPrompt = this.promptBuilder.buildSqlGenerationPrompt({
-        schema,
+        schema: optimizedSchema,
         dbType
       });
       
