@@ -131,11 +131,15 @@ app.use((req, res) => {
 // Error handling middleware
 app.use(errorHandler);
 
-// Start the server
-app.listen(port, () => {
-  logger.info(`Server running on port ${port}`);
-  logger.info(`Environment: ${serverConfig.env}`);
-  logger.info(`API URL: http://localhost:${port}/api`);
-});
+// Export for testing
+module.exports = app;
 
-module.exports = app; // Export for testing
+// Only start the server if this file is run directly
+if (require.main === module) {
+  // Start the server
+  app.listen(port, () => {
+    logger.info(`Server running on port ${port}`);
+    logger.info(`Environment: ${serverConfig.env}`);
+    logger.info(`API URL: http://localhost:${port}/api`);
+  });
+}
