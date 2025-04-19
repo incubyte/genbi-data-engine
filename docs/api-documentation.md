@@ -502,6 +502,50 @@ Deletes a saved query.
   }
   ```
 
+#### Refresh a Saved Query
+
+Refreshes a saved query by re-executing the SQL query against the associated database and updating the results.
+
+- **URL**: `/api/saved-queries/:id/refresh`
+- **Method**: `POST`
+- **URL Parameters**: `id` - The ID of the query to refresh
+- **Response**:
+  ```json
+  {
+    "status": "success",
+    "data": {
+      "query": {
+        "id": "550e8400-e29b-41d4-a716-446655440003",
+        "name": "Product Sales Visualization",
+        "query": "Show me top selling products",
+        "connection_id": "550e8400-e29b-41d4-a716-446655440001",
+        "connection_name": "Production PostgreSQL",
+        "connection_type": "postgres",
+        "sql_query": "SELECT product_name, SUM(quantity) as total_sold FROM sales GROUP BY product_name ORDER BY total_sold DESC LIMIT 10",
+        "results": [
+          {"product_name": "Product A", "total_sold": 1350},
+          {"product_name": "Product B", "total_sold": 1200},
+          {"product_name": "Product C", "total_sold": 1050}
+        ],
+        "chart_type": "bar",
+        "visualization_config": {
+          "xAxis": "product_name",
+          "yAxis": "total_sold",
+          "title": "Top Selling Products"
+        },
+        "description": "Visualization of top selling products by quantity",
+        "created_at": "2023-06-04T12:00:00.000Z",
+        "last_refreshed": "2023-06-10T15:30:00.000Z"
+      },
+      "results": [
+        {"product_name": "Product A", "total_sold": 1350},
+        {"product_name": "Product B", "total_sold": 1200},
+        {"product_name": "Product C", "total_sold": 1050}
+      ]
+    }
+  }
+  ```
+
 ## Data Models
 
 ### Connection

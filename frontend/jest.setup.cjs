@@ -18,7 +18,17 @@ global.TextEncoder = require('util').TextEncoder;
 global.TextDecoder = require('util').TextDecoder;
 
 // Mock import.meta.env
+jest.mock('./src/services/api.js', () => {
+  return require('./src/services/__mocks__/api.js');
+});
+
+// Define import.meta.env for any modules that might use it
 global.import = { meta: { env: { MODE: 'test', VITE_API_URL: 'http://localhost:3000/api' } } };
+
+// Mock the actual import.meta object
+if (typeof global.import.meta === 'undefined') {
+  global.import.meta = { env: { VITE_API_URL: 'http://localhost:3000/api' } };
+}
 
 // Mock HTMLCanvasElement.prototype.getContext
 HTMLCanvasElement.prototype.getContext = function() {

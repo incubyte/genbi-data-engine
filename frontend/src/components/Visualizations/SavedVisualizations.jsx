@@ -38,7 +38,8 @@ import {
   BarChart as BarChartIcon,
   PieChart as PieChartIcon,
   ShowChart as LineChartIcon,
-  TableChart as TableChartIcon
+  TableChart as TableChartIcon,
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
 
 // Default thumbnail URLs for different chart types
@@ -53,6 +54,8 @@ const SavedVisualizations = () => {
   const navigate = useNavigate();
   const [visualizations, setVisualizations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshingId, setRefreshingId] = useState(null);
   const [error, setError] = useState(null);
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
   const [selectedVisualization, setSelectedVisualization] = useState(null);
@@ -180,6 +183,81 @@ const SavedVisualizations = () => {
     handleDeleteDialogClose();
   };
 
+  // Handle refresh visualization
+  const handleRefreshVisualization = async (visualization) => {
+    try {
+      // Close menu if open
+      if (menuAnchorEl) {
+        handleMenuClose();
+      }
+
+      // Set refreshing state
+      setRefreshing(true);
+      setRefreshingId(visualization.id);
+
+      // Call the API to refresh the query
+      const result = await apiService.refreshQuery(visualization.id);
+
+      if (result.success) {
+        // Parse the updated results
+        let updatedResults = result.data.query.results;
+        let updatedConfig = result.data.query.visualization_config;
+
+        try {
+          if (typeof updatedResults === 'string') {
+            updatedResults = JSON.parse(updatedResults);
+          }
+        } catch (err) {
+          console.warn(`Failed to parse updated results for visualization ${visualization.id}:`, err);
+        }
+
+        try {
+          if (typeof updatedConfig === 'string') {
+            updatedConfig = JSON.parse(updatedConfig);
+          }
+        } catch (err) {
+          console.warn(`Failed to parse updated visualization_config for visualization ${visualization.id}:`, err);
+        }
+
+        // Update the visualization in the list
+        const updatedVisualizations = visualizations.map(v => {
+          if (v.id === visualization.id) {
+            return {
+              ...v,
+              results: updatedResults,
+              visualization_config: updatedConfig,
+              lastRefreshed: result.data.query.last_refreshed
+            };
+          }
+          return v;
+        });
+
+        setVisualizations(updatedVisualizations);
+
+        setNotification({
+          open: true,
+          message: 'Visualization refreshed successfully',
+          severity: 'success'
+        });
+      } else {
+        setNotification({
+          open: true,
+          message: `Failed to refresh visualization: ${result.error}`,
+          severity: 'error'
+        });
+      }
+    } catch (error) {
+      setNotification({
+        open: true,
+        message: `Error refreshing visualization: ${error.message}`,
+        severity: 'error'
+      });
+    } finally {
+      setRefreshing(false);
+      setRefreshingId(null);
+    }
+  };
+
   // Handle create new visualization
   const handleCreateVisualization = () => {
     navigate('/query');
@@ -219,7 +297,9 @@ const SavedVisualizations = () => {
           sqlQuery: visualization.sql_query,
           userQuery: visualization.query,
           databaseType: 'saved', // Indicate this is a saved visualization
-          visualization: visualizationConfig
+          visualization: visualizationConfig,
+          savedVisualizationId: visualization.id, // Pass the visualization ID for refresh functionality
+          lastRefreshed: visualization.lastRefreshed // Pass the last refreshed timestamp
         }
       }
     });
@@ -297,7 +377,10 @@ const SavedVisualizations = () => {
         <Grid container spacing={3}>
         {visualizations.map((visualization) => (
           <Grid item xs={12} sm={6} md={4} key={visualization.id}>
-            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            <Card
+              sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+              data-testid="visualization-card"
+            >
               <CardMedia
                 component="img"
                 height="160"
@@ -319,16 +402,34 @@ const SavedVisualizations = () => {
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
                   Created: {new Date(visualization.createdAt).toLocaleDateString()}
                 </Typography>
+                {visualization.lastRefreshed && (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                    Last refreshed: {new Date(visualization.lastRefreshed).toLocaleString()}
+                  </Typography>
+                )}
               </CardContent>
               <Divider />
               <CardActions sx={{ justifyContent: 'space-between' }}>
-                <Button
-                  size="small"
-                  color="primary"
-                  onClick={() => handleViewVisualization(visualization)}
-                >
-                  View
-                </Button>
+                <Box>
+                  <Button
+                    size="small"
+                    color="primary"
+                    onClick={() => handleViewVisualization(visualization)}
+                  >
+                    View
+                  </Button>
+                  <IconButton
+                    size="small"
+                    color="primary"
+                    onClick={() => handleRefreshVisualization(visualization)}
+                    disabled={refreshing && refreshingId === visualization.id}
+                    aria-label="refresh"
+                  >
+                    {refreshing && refreshingId === visualization.id ?
+                      <CircularProgress size={20} /> :
+                      <RefreshIcon fontSize="small" />}
+                  </IconButton>
+                </Box>
                 <IconButton
                   size="small"
                   onClick={(e) => handleMenuOpen(e, visualization)}
@@ -348,6 +449,17 @@ const SavedVisualizations = () => {
         open={Boolean(menuAnchorEl)}
         onClose={handleMenuClose}
       >
+        <MenuItem onClick={() => {
+          handleMenuClose();
+          if (selectedVisualization) {
+            handleRefreshVisualization(selectedVisualization);
+          }
+        }}>
+          <ListItemIcon>
+            <RefreshIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Refresh Data</ListItemText>
+        </MenuItem>
         <MenuItem onClick={handleMenuClose}>
           <ListItemIcon>
             <EditIcon fontSize="small" />

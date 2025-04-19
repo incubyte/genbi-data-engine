@@ -255,6 +255,40 @@ class ApiService {
       };
     }
   }
+
+  /**
+   * Refresh a saved query by re-executing it
+   * @param {string} id - ID of the query to refresh
+   * @returns {Promise<Object>} - Response from the server with updated results
+   */
+  async refreshQuery(id) {
+    try {
+      console.log(`Refreshing query with ID: ${id}`);
+
+      const url = `${API_URL}/saved-queries/${id}/refresh`;
+      console.log('Making API request to:', url);
+
+      const response = await axios.post(url);
+
+      console.log('API response:', response.data);
+      return {
+        success: true,
+        data: response.data.data
+      };
+    } catch (error) {
+      console.error('API Error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
+    }
+  }
 }
 
 export default new ApiService();

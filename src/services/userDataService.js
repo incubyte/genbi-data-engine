@@ -401,6 +401,51 @@ class UserDataService {
       throw new ApiError(500, `Failed to delete query: ${error.message}`);
     }
   }
+
+  /**
+   * Update the results of a saved query
+   * @param {string} id - Query ID
+   * @param {Object} results - New query results
+   * @returns {Promise<Object>} - Updated query
+   */
+  async updateQueryResults(id, results) {
+    await this.ensureInitialized();
+
+    try {
+      logger.info(`Updating results for query with ID: ${id}`);
+
+      // Check if query exists
+      const query = await this.db.getAsync(
+        'SELECT id FROM saved_queries WHERE id = ?',
+        [id]
+      );
+
+      if (!query) {
+        throw new ApiError(404, `Query with ID ${id} not found`);
+      }
+
+      const now = new Date().toISOString();
+      const resultsStr = results ? JSON.stringify(results) : null;
+
+      // Update the query results and last_refreshed timestamp
+      await this.db.runAsync(
+        `UPDATE saved_queries
+         SET results = ?,
+             last_refreshed = ?
+         WHERE id = ?`,
+        [resultsStr, now, id]
+      );
+
+      // Get the updated query
+      return this.getSavedQueryById(id);
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      logger.error(`Error updating results for query with ID ${id}:`, error);
+      throw new ApiError(500, `Failed to update query results: ${error.message}`);
+    }
+  }
 }
 
 // Export a singleton instance

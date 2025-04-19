@@ -48,6 +48,7 @@ This project is organized into two main components:
 - Export functionality for query results and visualizations
 - Saved connections, queries, and visualizations management
 - Ability to save visualizations with query results for quick access without re-running queries
+- Refresh functionality to update saved visualizations with current data
 - Responsive design for both desktop and mobile use
 
 ## Installation
@@ -240,6 +241,7 @@ If you don't have an Anthropic API key, the server will run in mock mode, which 
 4. **Manage Saved Visualizations**:
    - Access saved visualizations without re-running queries
    - View and interact with previously saved charts
+   - Refresh visualizations to update with current data
    - Delete visualizations you no longer need
 
 ## Error Handling

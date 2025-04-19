@@ -37,6 +37,7 @@ Key features:
 - View query results in a user-friendly format
 - Export data and visualizations
 - Access saved visualizations without re-running queries
+- Refresh saved visualizations with current data
 
 ## Getting Started
 
@@ -191,6 +192,13 @@ To view saved visualizations:
 1. From the main navigation, click "Visualizations"
 2. Browse through your saved visualizations
 3. Click "View" on any visualization to see it without re-running the query
+
+To refresh a saved visualization with current data:
+1. From the Visualizations screen, find the visualization you want to refresh
+2. Click the refresh icon on the visualization card, or
+3. Click "View" to open the visualization, then click the "Refresh Data" button, or
+4. Click the menu icon (three dots) and select "Refresh Data"
+5. The visualization will be updated with the latest data from the database
 
 To delete a saved query or visualization:
 1. From the respective screen (Saved Queries or Visualizations)

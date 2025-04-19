@@ -136,6 +136,7 @@ app.get('/api/saved-queries', queryController.getAllQueries);
 app.get('/api/saved-queries/:id', queryController.getQueryById);
 app.post('/api/saved-queries', queryController.saveQuery);
 app.delete('/api/saved-queries/:id', queryController.deleteQuery);
+app.post('/api/saved-queries/:id/refresh', queryController.refreshQuery);
 
 // 404 handler
 app.use((req, res) => {

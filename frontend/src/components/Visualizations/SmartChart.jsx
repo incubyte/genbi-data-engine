@@ -10,8 +10,7 @@ import {
   Tabs,
   Tab,
   Button,
-  Collapse,
-  IconButton
+  Collapse
 } from '@mui/material';
 import {
   Settings as SettingsIcon,
@@ -132,7 +131,7 @@ const SmartChart = ({
   };
 
   // Handle chart tab change
-  const handleChartTabChange = (event, newValue) => {
+  const handleChartTabChange = (_, newValue) => {
     setSelectedChartIndex(newValue);
     const selectedChart = analysis?.recommendedCharts?.[newValue];
     if (selectedChart) {
@@ -225,14 +224,12 @@ const SmartChart = ({
           startIcon={<SettingsIcon />}
           onClick={() => setShowConfig(!showConfig)}
           endIcon={
-            <IconButton size="small" sx={{ p: 0 }}>
-              <ExpandMoreIcon
-                sx={{
-                  transform: showConfig ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: '0.2s'
-                }}
-              />
-            </IconButton>
+            <ExpandMoreIcon
+              sx={{
+                transform: showConfig ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: '0.2s'
+              }}
+            />
           }
         >
           {showConfig ? 'Hide' : 'Show'} Chart Settings

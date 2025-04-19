@@ -215,6 +215,83 @@ class QueryController {
       next(error);
     }
   }
+
+  /**
+   * Refresh a saved query by re-executing it
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   * @param {Function} next - Express next middleware function
+   */
+  async refreshQuery(req, res, next) {
+    let db = null;
+    let dbService = null;
+
+    try {
+      const { id } = req.params;
+
+      logger.info(`Refreshing query with ID: ${id}`);
+
+      // Get the saved query
+      const savedQuery = await userDataService.getSavedQueryById(id);
+
+      if (!savedQuery.sql_query) {
+        throw new ApiError(400, 'This query does not have a SQL statement to execute');
+      }
+
+      if (!savedQuery.connection_id) {
+        throw new ApiError(400, 'This query is not associated with a database connection');
+      }
+
+      // Get the connection details
+      const connection = await userDataService.getSavedConnectionById(savedQuery.connection_id);
+
+      if (!connection) {
+        throw new ApiError(404, 'The associated database connection was not found');
+      }
+
+      // Parse connection info and create appropriate database service
+      const connectionInfo = databaseFactory.parseConnectionInfo({
+        type: connection.type,
+        connection: JSON.parse(connection.connection)
+      });
+
+      dbService = databaseFactory.createDatabaseService(connectionInfo);
+
+      // Generate a simple connection ID for caching
+      const connectionId = `${connectionInfo.type}-${savedQuery.connection_id}`;
+
+      // Connect to the database
+      db = await dbService.connect(connectionInfo.connection);
+
+      // Execute the SQL query with caching disabled to ensure fresh results
+      const results = await dbService.executeQuery(db, savedQuery.sql_query, [], {
+        useCache: false,
+        connectionId
+      });
+
+      // Update the saved query with the new results and last_refreshed timestamp
+      const updatedQuery = await userDataService.updateQueryResults(id, results);
+
+      res.status(200).json({
+        status: 'success',
+        data: {
+          query: updatedQuery,
+          results: results
+        }
+      });
+    } catch (error) {
+      next(error);
+    } finally {
+      // Close the database connection if it was opened
+      if (db && dbService) {
+        try {
+          await dbService.disconnect(db);
+        } catch (error) {
+          logger.error(`Error disconnecting from database: ${error.message}`);
+        }
+      }
+    }
+  }
 }
 
 module.exports = new QueryController();

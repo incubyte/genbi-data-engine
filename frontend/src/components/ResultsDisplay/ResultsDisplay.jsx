@@ -16,12 +16,14 @@ import {
   DialogTitle,
   TextField,
   Snackbar,
-  Alert
+  Alert,
+  CircularProgress
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   BarChart as BarChartIcon,
-  Save as SaveIcon
+  Save as SaveIcon,
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
 import DataTable from './DataTable';
 import SqlDisplay from './SqlDisplay';
@@ -67,6 +69,7 @@ const ResultsDisplay = ({ results: propResults }) => {
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
   const [currentChartType, setCurrentChartType] = useState('');
   const [currentChartConfig, setCurrentChartConfig] = useState({});
+  const [refreshing, setRefreshing] = useState(false);
   // We don't need loading state as we're using route state
   // const [loading, setLoading] = useState(false);
 
@@ -79,7 +82,7 @@ const ResultsDisplay = ({ results: propResults }) => {
   }, [location, results]);
 
   // Handle tab change
-  const handleTabChange = (event, newValue) => {
+  const handleTabChange = (_, newValue) => {
     setTabValue(newValue);
   };
 
@@ -112,6 +115,54 @@ const ResultsDisplay = ({ results: propResults }) => {
   // Handle notification close
   const handleNotificationClose = () => {
     setNotification({ ...notification, open: false });
+  };
+
+  // Handle refresh data
+  const handleRefreshData = async () => {
+    if (!results || !results.savedVisualizationId) {
+      setNotification({
+        open: true,
+        message: 'Cannot refresh: This is not a saved visualization',
+        severity: 'error'
+      });
+      return;
+    }
+
+    try {
+      setRefreshing(true);
+
+      // Call the API to refresh the query
+      const result = await apiService.refreshQuery(results.savedVisualizationId);
+
+      if (result.success) {
+        // Update the results with the fresh data
+        setResults({
+          ...results,
+          results: result.data.results,
+          lastRefreshed: result.data.query.last_refreshed
+        });
+
+        setNotification({
+          open: true,
+          message: 'Data refreshed successfully',
+          severity: 'success'
+        });
+      } else {
+        setNotification({
+          open: true,
+          message: `Failed to refresh data: ${result.error}`,
+          severity: 'error'
+        });
+      }
+    } catch (error) {
+      setNotification({
+        open: true,
+        message: `Error refreshing data: ${error.message}`,
+        severity: 'error'
+      });
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   // Handle save visualization
@@ -220,17 +271,35 @@ const ResultsDisplay = ({ results: propResults }) => {
           </Button>
           <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
             Query Results
+            {results.lastRefreshed && (
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 'normal', mt: 0.5 }}>
+                Last refreshed: {new Date(results.lastRefreshed).toLocaleString()}
+              </Typography>
+            )}
           </Typography>
           <Box sx={{ flexGrow: 1 }} />
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<SaveIcon />}
-            onClick={handleSaveDialogOpen}
-            sx={{ px: 2, py: 1 }}
-          >
-            Save Visualization
-          </Button>
+          {results.savedVisualizationId ? (
+            <Button
+              variant="contained"
+              color="secondary"
+              startIcon={refreshing ? <CircularProgress size={20} color="inherit" /> : <RefreshIcon />}
+              onClick={handleRefreshData}
+              disabled={refreshing}
+              sx={{ px: 2, py: 1, mr: 2 }}
+            >
+              {refreshing ? 'Refreshing...' : 'Refresh Data'}
+            </Button>
+          ) : (
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<SaveIcon />}
+              onClick={handleSaveDialogOpen}
+              sx={{ px: 2, py: 1 }}
+            >
+              Save Visualization
+            </Button>
+          )}
         </Box>
 
         <Paper elevation={3} sx={{ boxShadow: 3, borderRadius: 2, overflow: 'hidden' }}>
@@ -362,7 +431,9 @@ ResultsDisplay.propTypes = {
     sqlQuery: PropTypes.string,
     databaseType: PropTypes.string,
     userQuery: PropTypes.string,
-    visualization: PropTypes.object
+    visualization: PropTypes.object,
+    savedVisualizationId: PropTypes.string,
+    lastRefreshed: PropTypes.string
   })
 };
 

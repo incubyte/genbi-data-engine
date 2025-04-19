@@ -69,6 +69,7 @@ async function initUserDatabase() {
           visualization_config TEXT,
           description TEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          last_refreshed TIMESTAMP,
           FOREIGN KEY (connection_id) REFERENCES saved_connections(id) ON DELETE SET NULL
         )
       `);
