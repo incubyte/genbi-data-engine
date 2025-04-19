@@ -194,7 +194,7 @@ When generating SQL queries, follow this step-by-step reasoning process:
 6. Verify that the query addresses all aspects of the user's request
 7. Ensure the query follows best practices for the specific database type
 
-After going through this reasoning process, provide ONLY the final SQL query without any explanations.`;
+After going through this reasoning process, <IMPORTANT>Return your response in a specific JSON format without any explanations. Do not prefix or postfix json response with words like Here is the SQL query etc.</IMPORTANT>`;
   }
 }
 

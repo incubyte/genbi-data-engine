@@ -64,7 +64,10 @@ class QueryController {
         results = await dbService.executeQuery(db, sqlQuery, [], { useCache: false });
       } else {
         // Generate SQL query and visualization recommendations using Anthropic for regular queries
-        const generatedResponse = await anthropicService.generateSqlQuery(userQuery, schema, dbType);
+        const generatedResponse = await anthropicService.generateSqlQuery(userQuery, schema, dbType, {
+          optimizeSchema: true, 
+          maxTables: 20
+        });
         sqlQuery = generatedResponse.sqlQuery;
         visualization = generatedResponse.visualization;
 

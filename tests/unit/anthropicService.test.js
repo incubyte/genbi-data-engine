@@ -1,9 +1,15 @@
 // Mock dependencies before importing the service
 const mockValidateUserQuery = jest.fn();
+const mockExtractRelevantSchema = jest.fn();
 
 // Mock the validation service
 jest.mock('../../src/utils/validationService', () => ({
   validateUserQuery: mockValidateUserQuery
+}));
+
+// Mock the schema extractor
+jest.mock('../../src/services/anthropic/schemaExtractor', () => ({
+  extractRelevantSchema: mockExtractRelevantSchema
 }));
 
 // Mock the logger
@@ -41,6 +47,9 @@ describe('AnthropicService', () => {
 
     // Mock the validation to return valid by default
     mockValidateUserQuery.mockReturnValue({ isValid: true, errors: {} });
+
+    // Mock the schema extractor to return the input schema by default
+    mockExtractRelevantSchema.mockImplementation(async (schema) => schema);
   });
 
   describe('generateSqlQuery', () => {
@@ -186,6 +195,62 @@ describe('AnthropicService', () => {
 
       // Assert
       expect(result).toEqual(expectedResult);
+    });
+
+    test('should optimize schema for large databases', async () => {
+      // Arrange
+      const userQuery = 'Show me all users';
+      const largeSchema = {};
+      // Create a large schema with 20 tables
+      for (let i = 0; i < 20; i++) {
+        largeSchema[`table${i}`] = {
+          columns: [{ name: 'id', type: 'INTEGER' }]
+        };
+      }
+      const dbType = 'sqlite';
+      const optimizedSchema = { table0: { columns: [{ name: 'id', type: 'INTEGER' }] } };
+
+      // Mock the schema extractor to return an optimized schema
+      mockExtractRelevantSchema.mockResolvedValue(optimizedSchema);
+
+      // Spy on the prompt builder
+      const buildSpy = jest.spyOn(promptBuilder, 'buildSqlGenerationPrompt');
+
+      // Act
+      await anthropicService.generateSqlQuery(userQuery, largeSchema, dbType, { optimizeSchema: true });
+
+      // Assert
+      expect(mockExtractRelevantSchema).toHaveBeenCalledWith(largeSchema, userQuery, {
+        maxTables: 20,
+        includeForeignKeys: true
+      });
+      expect(buildSpy).toHaveBeenCalledWith({ schema: optimizedSchema, dbType });
+    });
+
+    test('should not optimize schema when optimizeSchema is false', async () => {
+      // Arrange
+      const userQuery = 'Show me all users';
+      const largeSchema = {};
+      // Create a large schema with 20 tables
+      for (let i = 0; i < 20; i++) {
+        largeSchema[`table${i}`] = {
+          columns: [{ name: 'id', type: 'INTEGER' }]
+        };
+      }
+      const dbType = 'sqlite';
+
+      // Reset the mock to track calls
+      mockExtractRelevantSchema.mockClear();
+
+      // Spy on the prompt builder
+      const buildSpy = jest.spyOn(promptBuilder, 'buildSqlGenerationPrompt');
+
+      // Act
+      await anthropicService.generateSqlQuery(userQuery, largeSchema, dbType, { optimizeSchema: false });
+
+      // Assert
+      expect(mockExtractRelevantSchema).not.toHaveBeenCalled();
+      expect(buildSpy).toHaveBeenCalledWith({ schema: largeSchema, dbType });
     });
   });
 

@@ -35,6 +35,7 @@ This project is organized into two main components:
   - PostgreSQL
   - MySQL
 - Anthropic API integration for natural language to SQL conversion
+- Intelligent schema optimization for large databases
 - Main endpoint that processes user queries and returns results
 - Comprehensive error handling and logging
 
@@ -255,6 +256,25 @@ Detailed documentation is available in the `docs` directory:
 - [User Guide](docs/user-guide.md): Guide for end users
 - [Developer Guide](docs/developer-guide.md): Guide for developers
 - [Documentation Maintenance Guide](docs/documentation-maintenance.md): Guide for maintaining documentation
+
+## Schema Optimization
+
+When working with large database schemas, GenBI automatically optimizes prompts sent to the LLM by:
+
+1. Sending the user query and full schema to Anthropic's Claude API
+2. Using Claude's intelligence to identify the most relevant tables:
+   - Tables directly related to the query intent
+   - Tables with semantic relationships to the query
+   - Tables connected through foreign key relationships
+3. Selecting only the relevant tables to include in the SQL generation prompt
+4. Maintaining relationship integrity by including related tables
+
+This optimization improves:
+- Performance with large schemas (reducing token usage)
+- Query quality (focusing the LLM on relevant tables)
+- Response time (smaller prompts process faster)
+
+Schema optimization is enabled by default for schemas with more than 10 tables and can be configured by modifying the options when calling the `generateSqlQuery` method.
 
 ## License
 
