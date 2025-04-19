@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "init-db": "node test-db.js",
     "dev": "nodemon server.js",
     "setup-sqlite-db": "node test-db.js",
     "setup-postgres-db": "node test-postgres-db.js",
