@@ -41,7 +41,7 @@ const MainLayout = () => {
     },
     ml: {
       xs: 0,
-      md: sidebarOpen ? '260px' : '72px',
+      md: sidebarOpen ? '10px' : '72px',
     },
     transition: theme.transitions.create(['width', 'margin'], {
       easing: theme.transitions.easing.sharp,

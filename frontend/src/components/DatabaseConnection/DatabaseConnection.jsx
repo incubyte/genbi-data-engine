@@ -117,7 +117,7 @@ const DatabaseConnection = ({ onConnectionEstablished }) => {
   };
 
   return (
-    <Container maxWidth="md">
+    <Container maxWidth="lg">
       <Box sx={{ my: 4 }}>
         <Typography variant="h4" component="h1" gutterBottom align="center">
           Database Connections
