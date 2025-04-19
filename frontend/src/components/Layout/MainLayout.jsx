@@ -69,13 +69,18 @@ const MainLayout = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          p: { xs: 2, sm: 3 },
+          pt: { xs: 2, sm: 2 },
+          pb: { xs: 3, sm: 4 },
           ...contentWidth,
           backgroundColor: theme.palette.background.default,
+          overflowX: 'hidden',
         }}
       >
         <Toolbar /> {/* Spacer for fixed app bar */}
-        <Outlet /> {/* Render the current route */}
+        <Box sx={{ maxWidth: '1400px', mx: 'auto' }}>
+          <Outlet /> {/* Render the current route */}
+        </Box>
       </Box>
     </Box>
   );

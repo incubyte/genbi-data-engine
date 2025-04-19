@@ -127,15 +127,44 @@ const Dashboard = () => {
   }
 
   return (
-    <Box>
+    <Box sx={{ maxWidth: '100%', overflow: 'hidden' }}>
       {renderWelcomeMessage()}
 
       {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={4}>
-          <Card sx={{ height: '100%', boxShadow: 3 }}>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', height: '100%', p: 3 }}>
-              <DatabaseIcon sx={{ fontSize: 48, color: 'primary.main', mr: 3 }} />
+      <Grid container spacing={{ xs: 2, md: 3 }} sx={{ mb: { xs: 3, md: 4 } }}>
+        <Grid item xs={12} sm={6} md={4}>
+          <Card
+            sx={{
+              height: '100%',
+              boxShadow: 2,
+              display: 'flex',
+              flexDirection: 'column',
+              borderRadius: 2,
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 3,
+              }
+            }}
+          >
+            <CardContent sx={{ display: 'flex', alignItems: 'center', p: { xs: 2, sm: 3 }, flex: 1 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  bgcolor: 'primary.light',
+                  color: 'primary.main',
+                  borderRadius: '12px',
+                  p: 1.5,
+                  mr: 2.5,
+                  flexShrink: 0,
+                  width: 56,
+                  height: 56
+                }}
+              >
+                <DatabaseIcon sx={{ fontSize: 28 }} />
+              </Box>
               <Box>
                 <Typography variant="h4" color="primary.main" sx={{ fontWeight: 'bold', mb: 0.5 }}>
                   {stats.connections}
@@ -148,10 +177,39 @@ const Dashboard = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={4}>
-          <Card sx={{ height: '100%', boxShadow: 3 }}>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', height: '100%', p: 3 }}>
-              <QueryIcon sx={{ fontSize: 48, color: 'secondary.main', mr: 3 }} />
+        <Grid item xs={12} sm={6} md={4}>
+          <Card
+            sx={{
+              height: '100%',
+              boxShadow: 2,
+              display: 'flex',
+              flexDirection: 'column',
+              borderRadius: 2,
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 3,
+              }
+            }}
+          >
+            <CardContent sx={{ display: 'flex', alignItems: 'center', p: { xs: 2, sm: 3 }, flex: 1 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  bgcolor: 'secondary.light',
+                  color: 'secondary.main',
+                  borderRadius: '12px',
+                  p: 1.5,
+                  mr: 2.5,
+                  flexShrink: 0,
+                  width: 56,
+                  height: 56
+                }}
+              >
+                <QueryIcon sx={{ fontSize: 28 }} />
+              </Box>
               <Box>
                 <Typography variant="h4" color="secondary.main" sx={{ fontWeight: 'bold', mb: 0.5 }}>
                   {stats.queries}
@@ -164,10 +222,39 @@ const Dashboard = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={4}>
-          <Card sx={{ height: '100%', boxShadow: 3 }}>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', height: '100%', p: 3 }}>
-              <ChartIcon sx={{ fontSize: 48, color: 'success.main', mr: 3 }} />
+        <Grid item xs={12} sm={6} md={4}>
+          <Card
+            sx={{
+              height: '100%',
+              boxShadow: 2,
+              display: 'flex',
+              flexDirection: 'column',
+              borderRadius: 2,
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              '&:hover': {
+                transform: 'translateY(-4px)',
+                boxShadow: 3,
+              }
+            }}
+          >
+            <CardContent sx={{ display: 'flex', alignItems: 'center', p: { xs: 2, sm: 3 }, flex: 1 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  bgcolor: 'success.light',
+                  color: 'success.main',
+                  borderRadius: '12px',
+                  p: 1.5,
+                  mr: 2.5,
+                  flexShrink: 0,
+                  width: 56,
+                  height: 56
+                }}
+              >
+                <ChartIcon sx={{ fontSize: 28 }} />
+              </Box>
               <Box>
                 <Typography variant="h4" color="success.main" sx={{ fontWeight: 'bold', mb: 0.5 }}>
                   {stats.visualizations}
@@ -182,11 +269,20 @@ const Dashboard = () => {
       </Grid>
 
       {/* Recent Activity and Quick Actions */}
-      <Grid container spacing={3}>
+      <Grid container spacing={{ xs: 2, md: 3 }}>
         {/* Recent Connections */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, height: '100%', boxShadow: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Paper
+            sx={{
+              p: { xs: 2, sm: 3 },
+              height: '100%',
+              boxShadow: 2,
+              display: 'flex',
+              flexDirection: 'column',
+              borderRadius: 2,
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 2, sm: 3 } }}>
               <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Recent Connections</Typography>
               <Button
                 variant="contained"
@@ -217,7 +313,7 @@ const Dashboard = () => {
                 ))}
               </List>
             ) : (
-              <Box sx={{ p: 3, textAlign: 'center', bgcolor: 'background.dark', borderRadius: 1 }}>
+              <Box sx={{ p: { xs: 2, sm: 3 }, textAlign: 'center', bgcolor: 'background.dark', borderRadius: 1.5, width: '100%' }}>
                 <Typography variant="body1" color="text.secondary">
                   No saved connections yet. Create your first connection to get started.
                 </Typography>
@@ -228,8 +324,17 @@ const Dashboard = () => {
 
         {/* Recent Queries */}
         <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3, height: '100%', boxShadow: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Paper
+            sx={{
+              p: { xs: 2, sm: 3 },
+              height: '100%',
+              boxShadow: 2,
+              display: 'flex',
+              flexDirection: 'column',
+              borderRadius: 2,
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 2, sm: 3 } }}>
               <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Recent Queries</Typography>
               <Button
                 variant="contained"
@@ -260,7 +365,7 @@ const Dashboard = () => {
                 ))}
               </List>
             ) : (
-              <Box sx={{ p: 3, textAlign: 'center', bgcolor: 'background.dark', borderRadius: 1 }}>
+              <Box sx={{ p: { xs: 2, sm: 3 }, textAlign: 'center', bgcolor: 'background.dark', borderRadius: 1.5, width: '100%' }}>
                 <Typography variant="body1" color="text.secondary">
                   No saved queries yet. Start asking questions about your data.
                 </Typography>
@@ -271,33 +376,136 @@ const Dashboard = () => {
 
         {/* Tips and Getting Started */}
         <Grid item xs={12}>
-          <Paper sx={{ p: 3, mt: 2, boxShadow: 2 }}>
-            <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold' }}>
+          <Paper
+            sx={{
+              p: { xs: 2, sm: 3 },
+              mt: { xs: 1, sm: 2 },
+              boxShadow: 2,
+              borderRadius: 2,
+            }}
+          >
+            <Typography variant="h6" sx={{ mb: { xs: 2, sm: 3 }, fontWeight: 'bold' }}>
               Tips for Getting Started
             </Typography>
 
-            <Grid container spacing={3}>
-              <Grid item xs={12} sm={4}>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', p: 2, bgcolor: 'background.dark', borderRadius: 2, height: '100%' }}>
-                  <TipIcon color="primary" sx={{ mr: 2, mt: 0.5, fontSize: 28 }} />
+            <Grid container spacing={{ xs: 2, md: 3 }}>
+              <Grid item xs={12} sm={6} md={4}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    p: { xs: 1.5, sm: 2 },
+                    bgcolor: 'background.dark',
+                    borderRadius: 2,
+                    height: '100%',
+                    transition: 'transform 0.2s',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      bgcolor: 'primary.light',
+                      '& .MuiSvgIcon-root': {
+                        color: 'primary.dark'
+                      }
+                    }
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      bgcolor: 'white',
+                      borderRadius: '8px',
+                      p: 1,
+                      mr: 1.5,
+                      flexShrink: 0,
+                      width: 36,
+                      height: 36
+                    }}
+                  >
+                    <TipIcon color="primary" sx={{ fontSize: 20, flexShrink: 0 }} />
+                  </Box>
                   <Typography variant="body1">
                     <strong>Connect Your Database</strong> - Start by connecting to your SQLite, PostgreSQL, or MySQL database.
                   </Typography>
                 </Box>
               </Grid>
 
-              <Grid item xs={12} sm={4}>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', p: 2, bgcolor: 'background.dark', borderRadius: 2, height: '100%' }}>
-                  <TipIcon color="primary" sx={{ mr: 2, mt: 0.5, fontSize: 28 }} />
+              <Grid item xs={12} sm={6} md={4}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    p: { xs: 1.5, sm: 2 },
+                    bgcolor: 'background.dark',
+                    borderRadius: 2,
+                    height: '100%',
+                    transition: 'transform 0.2s',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      bgcolor: 'secondary.light',
+                      '& .MuiSvgIcon-root': {
+                        color: 'secondary.dark'
+                      }
+                    }
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      bgcolor: 'white',
+                      borderRadius: '8px',
+                      p: 1,
+                      mr: 1.5,
+                      flexShrink: 0,
+                      width: 36,
+                      height: 36
+                    }}
+                  >
+                    <TipIcon color="primary" sx={{ fontSize: 20, flexShrink: 0 }} />
+                  </Box>
                   <Typography variant="body1">
                     <strong>Ask Questions</strong> - Use natural language to ask questions about your data.
                   </Typography>
                 </Box>
               </Grid>
 
-              <Grid item xs={12} sm={4}>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', p: 2, bgcolor: 'background.dark', borderRadius: 2, height: '100%' }}>
-                  <TipIcon color="primary" sx={{ mr: 2, mt: 0.5, fontSize: 28 }} />
+              <Grid item xs={12} sm={6} md={4}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    p: { xs: 1.5, sm: 2 },
+                    bgcolor: 'background.dark',
+                    borderRadius: 2,
+                    height: '100%',
+                    transition: 'transform 0.2s',
+                    '&:hover': {
+                      transform: 'translateY(-2px)',
+                      bgcolor: 'success.light',
+                      '& .MuiSvgIcon-root': {
+                        color: 'success.dark'
+                      }
+                    }
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      bgcolor: 'white',
+                      borderRadius: '8px',
+                      p: 1,
+                      mr: 1.5,
+                      flexShrink: 0,
+                      width: 36,
+                      height: 36
+                    }}
+                  >
+                    <TipIcon color="primary" sx={{ fontSize: 20, flexShrink: 0 }} />
+                  </Box>
                   <Typography variant="body1">
                     <strong>Save & Share</strong> - Save your queries and visualizations for future reference.
                   </Typography>

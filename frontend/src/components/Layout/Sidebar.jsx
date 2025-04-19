@@ -114,8 +114,8 @@ const Sidebar = ({ open, onToggle }) => {
 
       <Divider />
 
-      <Box sx={{ mt: 1 }}>
-        <List component="nav">
+      <Box sx={{ mt: 2 }}>
+        <List component="nav" sx={{ px: 1 }}>
           {navItems.map((item) => {
             const isSelected = location.pathname === item.path;
 
@@ -124,9 +124,22 @@ const Sidebar = ({ open, onToggle }) => {
                 key={item.title}
                 selected={isSelected}
                 onClick={() => handleNavigation(item.path)}
+                sx={{
+                  borderRadius: 1.5,
+                  mb: 0.5,
+                  py: 1.25,
+                }}
               >
-                <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.title} />
+                <ListItemIcon sx={{ minWidth: 40, color: isSelected ? 'primary.main' : 'inherit' }}>
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText
+                  primary={item.title}
+                  primaryTypographyProps={{
+                    fontWeight: isSelected ? 600 : 500,
+                    fontSize: '0.95rem'
+                  }}
+                />
               </ListItemButton>
             ) : (
               <Tooltip key={item.title} title={item.title} placement="right">
@@ -136,7 +149,9 @@ const Sidebar = ({ open, onToggle }) => {
                   sx={{
                     minHeight: 48,
                     justifyContent: 'center',
-                    px: 2.5,
+                    px: 2,
+                    borderRadius: 1.5,
+                    mb: 0.5,
                   }}
                 >
                   <ListItemIcon
@@ -144,6 +159,7 @@ const Sidebar = ({ open, onToggle }) => {
                       minWidth: 0,
                       mr: 'auto',
                       justifyContent: 'center',
+                      color: isSelected ? 'primary.main' : 'inherit'
                     }}
                   >
                     {item.icon}
@@ -210,6 +226,8 @@ const Sidebar = ({ open, onToggle }) => {
             width: open ? DRAWER_WIDTH : COLLAPSED_DRAWER_WIDTH,
             boxSizing: 'border-box',
             overflowX: 'hidden',
+            borderRight: '1px solid',
+            borderColor: 'divider',
             transition: theme.transitions.create('width', {
               easing: theme.transitions.easing.sharp,
               duration: theme.transitions.duration.enteringScreen,

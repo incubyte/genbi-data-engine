@@ -34,7 +34,7 @@ const Header = ({ open, onToggle, title }) => {
         boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.06), 0px 1px 3px rgba(0, 0, 0, 0.1)',
       }}
     >
-      <Toolbar>
+      <Toolbar sx={{ px: { xs: 2, sm: 3 } }}>
         {isMobile && (
           <IconButton
             color="inherit"
@@ -46,43 +46,51 @@ const Header = ({ open, onToggle, title }) => {
             <MenuIcon />
           </IconButton>
         )}
-        
+
         <Typography
           variant="h6"
           noWrap
           component="div"
-          sx={{ flexGrow: 1, display: { xs: 'none', sm: 'block' } }}
+          sx={{
+            flexGrow: 1,
+            display: { xs: 'none', sm: 'block' },
+            fontWeight: 600,
+            color: 'primary.main'
+          }}
         >
           {title || 'GenBI Dashboard'}
         </Typography>
-        
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Tooltip title="Help">
-            <IconButton color="inherit" size="large">
-              <HelpIcon />
+            <IconButton color="inherit" size="medium">
+              <HelpIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          
+
           <Tooltip title="Notifications">
-            <IconButton color="inherit" size="large">
-              <Badge badgeContent={3} color="error">
-                <NotificationsIcon />
+            <IconButton color="inherit" size="medium">
+              <Badge badgeContent={3} color="error" sx={{ '& .MuiBadge-badge': { fontSize: '0.6rem', height: 16, minWidth: 16 } }}>
+                <NotificationsIcon fontSize="small" />
               </Badge>
             </IconButton>
           </Tooltip>
-          
+
           <Tooltip title="Toggle theme">
-            <IconButton color="inherit" size="large">
-              <LightModeIcon />
+            <IconButton color="inherit" size="medium">
+              <LightModeIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          
+
           <Button
             variant="contained"
             color="secondary"
+            size="small"
             sx={{
-              ml: 2,
-              display: { xs: 'none', sm: 'block' }
+              ml: 1,
+              display: { xs: 'none', sm: 'block' },
+              fontWeight: 600,
+              px: 2
             }}
           >
             Upgrade to Pro
