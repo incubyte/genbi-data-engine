@@ -27,7 +27,7 @@ GenBI is a full-stack application with a Node.js backend and a React frontend. T
 
 - **Backend**: Node.js with Express, providing RESTful API endpoints for database connections, query processing, and data management.
 - **Frontend**: React with Material-UI, providing a user-friendly interface for interacting with the application.
-- **Database**: SQLite for storing user data (saved connections and queries).
+- **Database**: SQLite for storing user data (saved connections, queries, and visualizations).
 - **External Services**: Anthropic Claude API for natural language to SQL conversion.
 
 The application follows these key design principles:
@@ -283,6 +283,54 @@ To add a new API method:
 
 1. Add a new method to the `ApiService` class in `frontend/src/services/api.js`
 2. Use the method in your components
+
+### Visualization Saving Feature
+
+The application includes a feature to save visualizations along with query results and SQL queries. This allows users to access saved visualizations without re-running queries.
+
+#### Database Schema
+
+The `saved_queries` table has been extended to include visualization data:
+
+```sql
+CREATE TABLE saved_queries (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  query TEXT NOT NULL,
+  connection_id TEXT,
+  sql_query TEXT,
+  results TEXT,
+  chart_type TEXT,
+  visualization_config TEXT,
+  description TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (connection_id) REFERENCES saved_connections(id) ON DELETE SET NULL
+)
+```
+
+#### Backend Implementation
+
+The `userDataService.js` file handles saving and retrieving visualizations:
+
+- `saveQuery`: Saves a query or visualization with optional results and visualization data
+- `getSavedQueries`: Retrieves all saved queries and visualizations
+- `getSavedQueryById`: Retrieves a specific query or visualization by ID
+
+When retrieving a visualization, the service parses the JSON fields (`results` and `visualization_config`) to convert them from strings to objects.
+
+#### Frontend Implementation
+
+The frontend includes components for saving and viewing visualizations:
+
+- `ResultsDisplay.jsx`: Includes a "Save Visualization" button and dialog
+- `SavedVisualizations.jsx`: Displays saved visualizations and allows users to view them
+- `SmartChart.jsx`: Captures chart type and configuration changes
+
+The `apiService.js` file includes methods for saving and retrieving visualizations:
+
+- `saveVisualization`: Saves a visualization with query results and configuration
+- `getSavedQueries`: Retrieves all saved queries and visualizations
+- `getSavedQueryById`: Retrieves a specific visualization by ID
 
 Example:
 ```javascript

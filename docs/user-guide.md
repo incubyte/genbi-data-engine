@@ -33,9 +33,10 @@ Key features:
 - Query your data using natural language
 - Automatic data visualization with smart chart selection
 - Save and manage database connections
-- Save and reuse queries
+- Save and reuse queries and visualizations
 - View query results in a user-friendly format
 - Export data and visualizations
+- Access saved visualizations without re-running queries
 
 ## Getting Started
 
@@ -165,7 +166,7 @@ The results page shows:
 - The generated SQL query
 - Options to save the query or export the results
 
-### Saving and Managing Queries
+### Saving and Managing Queries and Visualizations
 
 You can save your queries for future use:
 
@@ -179,10 +180,22 @@ To use a saved query:
 3. The query will be loaded into the query box
 4. Click "Submit" to run the query
 
-To delete a saved query:
-1. From the query screen, click "Saved Queries"
-2. Find the query you want to delete
-3. Click the delete icon (trash can)
+You can also save visualizations along with query results:
+
+1. After getting query results, go to the "Visualizations" tab
+2. Click "Save Visualization" in the top-right corner
+3. Enter a name and optional description for the visualization
+4. Click "Save"
+
+To view saved visualizations:
+1. From the main navigation, click "Visualizations"
+2. Browse through your saved visualizations
+3. Click "View" on any visualization to see it without re-running the query
+
+To delete a saved query or visualization:
+1. From the respective screen (Saved Queries or Visualizations)
+2. Find the item you want to delete
+3. Click the menu icon (three dots) and select "Delete"
 4. Confirm the deletion
 
 ## Data Visualization

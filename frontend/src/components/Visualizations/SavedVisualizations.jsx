@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import apiService from '../../services/api';
 import {
   Box,
   Grid,
@@ -22,7 +23,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogContentText,
-  DialogActions
+  DialogActions,
+  Snackbar,
+  Alert as MuiAlert,
+  CircularProgress
 } from '@mui/material';
 import {
   MoreVert as MoreIcon,
@@ -37,40 +41,67 @@ import {
   TableChart as TableChartIcon
 } from '@mui/icons-material';
 
-// Sample visualization data (in a real app, this would come from an API)
-const sampleVisualizations = [
-  {
-    id: 1,
-    title: 'Monthly Revenue by Category',
-    description: 'Bar chart showing monthly revenue trends across product categories',
-    type: 'bar',
-    createdAt: '2023-10-15T14:30:00Z',
-    thumbnailUrl: 'https://via.placeholder.com/300x200?text=Bar+Chart'
-  },
-  {
-    id: 2,
-    title: 'Customer Segments',
-    description: 'Pie chart showing distribution of customers by segment',
-    type: 'pie',
-    createdAt: '2023-10-10T09:15:00Z',
-    thumbnailUrl: 'https://via.placeholder.com/300x200?text=Pie+Chart'
-  },
-  {
-    id: 3,
-    title: 'Sales Growth Trend',
-    description: 'Line chart showing sales growth over the past 12 months',
-    type: 'line',
-    createdAt: '2023-09-28T16:45:00Z',
-    thumbnailUrl: 'https://via.placeholder.com/300x200?text=Line+Chart'
-  }
-];
+// Default thumbnail URLs for different chart types
+const defaultThumbnails = {
+  bar: 'https://via.placeholder.com/300x200?text=Bar+Chart',
+  pie: 'https://via.placeholder.com/300x200?text=Pie+Chart',
+  line: 'https://via.placeholder.com/300x200?text=Line+Chart',
+  default: 'https://via.placeholder.com/300x200?text=Visualization'
+};
 
 const SavedVisualizations = () => {
   const navigate = useNavigate();
-  const [visualizations, setVisualizations] = useState(sampleVisualizations);
+  const [visualizations, setVisualizations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
   const [selectedVisualization, setSelectedVisualization] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+
+  // Fetch saved visualizations on component mount
+  useEffect(() => {
+    const fetchVisualizations = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch saved queries that have visualization data
+        const result = await apiService.getSavedQueries();
+
+        if (result.success) {
+          // Filter queries that have visualization data
+          const visualizationQueries = result.data.filter(query =>
+            query.chart_type && query.visualization_config
+          );
+
+          // Map to visualization format
+          const mappedVisualizations = visualizationQueries.map(query => ({
+            id: query.id,
+            title: query.name,
+            description: query.description || `Visualization for: ${query.query}`,
+            type: query.chart_type,
+            createdAt: query.created_at,
+            query: query.query,
+            sql_query: query.sql_query,
+            results: query.results,
+            visualization_config: query.visualization_config,
+            thumbnailUrl: defaultThumbnails[query.chart_type] || defaultThumbnails.default
+          }));
+
+          setVisualizations(mappedVisualizations);
+        } else {
+          setError('Failed to fetch visualizations');
+        }
+      } catch (err) {
+        setError(`Error fetching visualizations: ${err.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVisualizations();
+  }, []);
 
   // Handle menu open
   const handleMenuOpen = (event, visualization) => {
@@ -95,10 +126,34 @@ const SavedVisualizations = () => {
   };
 
   // Handle delete visualization
-  const handleDeleteVisualization = () => {
+  const handleDeleteVisualization = async () => {
     if (selectedVisualization) {
-      // Filter out the deleted visualization
-      setVisualizations(visualizations.filter(v => v.id !== selectedVisualization.id));
+      try {
+        // Delete the visualization using the API
+        const result = await apiService.deleteQuery(selectedVisualization.id);
+
+        if (result.success) {
+          // Filter out the deleted visualization
+          setVisualizations(visualizations.filter(v => v.id !== selectedVisualization.id));
+          setNotification({
+            open: true,
+            message: 'Visualization deleted successfully',
+            severity: 'success'
+          });
+        } else {
+          setNotification({
+            open: true,
+            message: `Failed to delete visualization: ${result.error}`,
+            severity: 'error'
+          });
+        }
+      } catch (error) {
+        setNotification({
+          open: true,
+          message: `Error deleting visualization: ${error.message}`,
+          severity: 'error'
+        });
+      }
     }
     handleDeleteDialogClose();
   };
@@ -106,6 +161,27 @@ const SavedVisualizations = () => {
   // Handle create new visualization
   const handleCreateVisualization = () => {
     navigate('/query');
+  };
+
+  // Handle view visualization
+  const handleViewVisualization = (visualization) => {
+    // Navigate to results page with the saved visualization data
+    navigate('/results', {
+      state: {
+        results: {
+          results: visualization.results,
+          sqlQuery: visualization.sql_query,
+          userQuery: visualization.query,
+          databaseType: 'saved', // Indicate this is a saved visualization
+          visualization: visualization.visualization_config
+        }
+      }
+    });
+  };
+
+  // Handle notification close
+  const handleNotificationClose = () => {
+    setNotification({ ...notification, open: false });
   };
 
   // Get icon based on chart type
@@ -137,8 +213,23 @@ const SavedVisualizations = () => {
         </Button>
       </Box>
 
+      {/* Loading state */}
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+          <CircularProgress />
+        </Box>
+      )}
+
+      {/* Error state */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          <AlertTitle>Error</AlertTitle>
+          {error}
+        </Alert>
+      )}
+
       {/* Empty state */}
-      {visualizations.length === 0 && (
+      {!loading && !error && visualizations.length === 0 && (
         <Paper sx={{ p: 3, textAlign: 'center' }}>
           <Alert severity="info" sx={{ mb: 2 }}>
             <AlertTitle>No Visualizations Yet</AlertTitle>
@@ -156,7 +247,8 @@ const SavedVisualizations = () => {
       )}
 
       {/* Visualizations grid */}
-      <Grid container spacing={3}>
+      {!loading && !error && visualizations.length > 0 && (
+        <Grid container spacing={3}>
         {visualizations.map((visualization) => (
           <Grid item xs={12} sm={6} md={4} key={visualization.id}>
             <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -184,7 +276,11 @@ const SavedVisualizations = () => {
               </CardContent>
               <Divider />
               <CardActions sx={{ justifyContent: 'space-between' }}>
-                <Button size="small" color="primary">
+                <Button
+                  size="small"
+                  color="primary"
+                  onClick={() => handleViewVisualization(visualization)}
+                >
                   View
                 </Button>
                 <IconButton
@@ -198,6 +294,7 @@ const SavedVisualizations = () => {
           </Grid>
         ))}
       </Grid>
+      )}
 
       {/* Visualization actions menu */}
       <Menu
@@ -250,6 +347,23 @@ const SavedVisualizations = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Notification Snackbar */}
+      <Snackbar
+        open={notification.open}
+        autoHideDuration={6000}
+        onClose={handleNotificationClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <MuiAlert
+          onClose={handleNotificationClose}
+          severity={notification.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {notification.message}
+        </MuiAlert>
+      </Snackbar>
     </Box>
   );
 };

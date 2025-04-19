@@ -4,6 +4,34 @@ import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import ResultsDisplay from './ResultsDisplay';
 
+// Mock the api service
+jest.mock('../../services/api', () => ({
+  processQuery: jest.fn().mockResolvedValue({
+    success: true,
+    data: {
+      results: [
+        { id: 1, name: 'John Doe', age: 30 },
+        { id: 2, name: 'Jane Smith', age: 25 }
+      ],
+      sqlQuery: 'SELECT * FROM users;',
+      visualization: {
+        recommendedChartTypes: ['bar', 'table'],
+        xAxis: 'name',
+        yAxis: 'age',
+        reasoning: 'Bar chart is recommended to compare ages across different users.'
+      }
+    }
+  }),
+  saveVisualization: jest.fn().mockResolvedValue({
+    success: true,
+    data: { id: '123', name: 'Saved Visualization' }
+  }),
+  saveQuery: jest.fn().mockResolvedValue({
+    success: true,
+    data: { id: '123', name: 'Saved Query' }
+  })
+}));
+
 // Mock the SmartChart component
 jest.mock('../Visualizations/SmartChart', () => {
   return function MockSmartChart(props) {

@@ -55,6 +55,11 @@ const createTestDatabase = async () => {
             name TEXT NOT NULL,
             query TEXT NOT NULL,
             connection_id TEXT,
+            sql_query TEXT,
+            results TEXT,
+            chart_type TEXT,
+            visualization_config TEXT,
+            description TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (connection_id) REFERENCES saved_connections(id) ON DELETE SET NULL
           )

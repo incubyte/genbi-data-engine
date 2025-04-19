@@ -312,16 +312,33 @@ Retrieves a specific saved query by its ID.
 
 #### Save a New Query
 
-Saves a new query.
+Saves a new query or visualization.
 
 - **URL**: `/api/saved-queries`
 - **Method**: `POST`
-- **Request Body**:
+- **Request Body (Basic Query)**:
   ```json
   {
     "name": "Monthly Users",
     "query": "Show me all users who signed up last month",
     "connection_id": "550e8400-e29b-41d4-a716-446655440000"
+  }
+  ```
+- **Request Body (Visualization with Results)**:
+  ```json
+  {
+    "name": "Monthly Revenue by Category",
+    "query": "Show me monthly revenue by product category",
+    "connection_id": "550e8400-e29b-41d4-a716-446655440000",
+    "sql_query": "SELECT category, SUM(price) as revenue, strftime('%Y-%m', purchase_date) as month FROM sales GROUP BY category, month ORDER BY month",
+    "results": [{"category": "Electronics", "revenue": 12500, "month": "2023-05"}, {"category": "Clothing", "revenue": 8300, "month": "2023-05"}],
+    "chart_type": "bar",
+    "visualization_config": {
+      "xAxis": "category",
+      "yAxis": "revenue",
+      "title": "Revenue by Category"
+    },
+    "description": "Monthly revenue breakdown by product category"
   }
   ```
 - **Response**:
@@ -331,11 +348,14 @@ Saves a new query.
     "data": {
       "query": {
         "id": "550e8400-e29b-41d4-a716-446655440002",
-        "name": "Monthly Users",
-        "query": "Show me all users who signed up last month",
+        "name": "Monthly Revenue by Category",
+        "query": "Show me monthly revenue by product category",
         "connection_id": "550e8400-e29b-41d4-a716-446655440000",
         "connection_name": "Local SQLite Database",
         "connection_type": "sqlite",
+        "sql_query": "SELECT category, SUM(price) as revenue, strftime('%Y-%m', purchase_date) as month FROM sales GROUP BY category, month ORDER BY month",
+        "chart_type": "bar",
+        "description": "Monthly revenue breakdown by product category",
         "created_at": "2023-06-03T12:00:00.000Z"
       }
     }
@@ -371,7 +391,7 @@ A database connection.
 
 ### Query
 
-A saved query.
+A saved query or visualization.
 
 - `id` (string): Unique identifier for the query
 - `name` (string): User-friendly name for the query
@@ -379,6 +399,16 @@ A saved query.
 - `connection_id` (string, optional): ID of the associated connection
 - `connection_name` (string, optional): Name of the associated connection
 - `connection_type` (string, optional): Type of the associated connection
+- `sql_query` (string, optional): The generated SQL query
+- `results` (array, optional): The query results
+- `chart_type` (string, optional): Type of chart (bar, line, pie)
+- `visualization_config` (object, optional): Configuration for the visualization
+  - `xAxis` (string, optional): Field to use for x-axis
+  - `yAxis` (string, optional): Field to use for y-axis
+  - `labels` (string, optional): Field to use for labels (pie charts)
+  - `values` (string, optional): Field to use for values (pie charts)
+  - `title` (string, optional): Chart title
+- `description` (string, optional): Description of the visualization
 - `created_at` (string): Creation timestamp
 
 ## Examples
@@ -440,4 +470,33 @@ const queryResponse = await fetch('/api/saved-queries', {
 
 const queryData = await queryResponse.json();
 console.log(queryData.data.query);
+```
+
+### Example 3: Save a Visualization with Results
+
+```javascript
+// Save a visualization with query results
+const visualizationResponse = await fetch('/api/saved-queries', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    name: 'Monthly Revenue by Category',
+    query: 'Show me monthly revenue by product category',
+    connection_id: connectionId,
+    sql_query: 'SELECT category, SUM(price) as revenue, strftime(\'%Y-%m\', purchase_date) as month FROM sales GROUP BY category, month ORDER BY month',
+    results: [{"category": "Electronics", "revenue": 12500, "month": "2023-05"}, {"category": "Clothing", "revenue": 8300, "month": "2023-05"}],
+    chart_type: 'bar',
+    visualization_config: {
+      xAxis: 'category',
+      yAxis: 'revenue',
+      title: 'Revenue by Category'
+    },
+    description: 'Monthly revenue breakdown by product category'
+  })
+});
+
+const visualizationData = await visualizationResponse.json();
+console.log(visualizationData.data.query);
 ```

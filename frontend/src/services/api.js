@@ -207,6 +207,35 @@ class ApiService {
   }
 
   /**
+   * Save a visualization with query results
+   * @param {Object} visualizationData - Visualization data to save
+   * @param {string} visualizationData.name - Name for the saved visualization
+   * @param {string} visualizationData.query - Original natural language query
+   * @param {string} visualizationData.sql_query - Generated SQL query
+   * @param {Array} visualizationData.results - Query results
+   * @param {string} visualizationData.chart_type - Chart type (bar, line, pie)
+   * @param {Object} visualizationData.visualization_config - Visualization configuration
+   * @param {string} [visualizationData.description] - Visualization description
+   * @param {string} [visualizationData.connection_id] - ID of the associated connection
+   * @returns {Promise<Object>} - Response from the server
+   */
+  async saveVisualization(visualizationData) {
+    try {
+      const response = await axios.post(`${API_URL}/saved-queries`, visualizationData);
+
+      return {
+        success: true,
+        data: response.data.data.query
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
+    }
+  }
+
+  /**
    * Delete a saved query
    * @param {string} id - ID of the query to delete
    * @returns {Promise<Object>} - Response from the server

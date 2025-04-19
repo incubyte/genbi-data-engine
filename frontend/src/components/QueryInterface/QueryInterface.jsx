@@ -70,7 +70,8 @@ const QueryInterface = ({ connectionInfo: propConnectionInfo, onQueryResults }) 
         } else {
           // Navigate to results page with the data
           // No need to set results in state
-          navigate('/results', { state: { results: result.data } });
+          // Add the original user query to the results
+          navigate('/results', { state: { results: { ...result.data, userQuery: queryText } } });
         }
         return result.data; // Return data for promise chaining
       } else {
