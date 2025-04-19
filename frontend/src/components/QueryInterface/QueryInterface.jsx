@@ -119,7 +119,7 @@ const QueryInterface = ({ connectionInfo: propConnectionInfo, onQueryResults }) 
 
   return (
     <ErrorBoundary>
-      <Container maxWidth="md">
+      <Container maxWidth="lg">
         <Box sx={{ my: 4 }}>
           <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ fontWeight: 'bold', mb: 2 }}>
             Ask Questions About Your Data

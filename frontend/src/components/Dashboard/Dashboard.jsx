@@ -131,10 +131,11 @@ const Dashboard = () => {
       {renderWelcomeMessage()}
 
       {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Grid container spacing={3} sx={{ mb: 4, width: '100%'}}>
+
         <Grid item xs={12} sm={4}>
           <Card sx={{ height: '100%', boxShadow: 3 }}>
-            <CardContent sx={{ display: 'flex', alignItems: 'center', height: '100%', p: 3 }}>
+            <CardContent sx={{ display: 'flex', alignItems: 'center', height: '100%', p: 3, gap: 8 }}>
               <DatabaseIcon sx={{ fontSize: 48, color: 'primary.main', mr: 3 }} />
               <Box>
                 <Typography variant="h4" color="primary.main" sx={{ fontWeight: 'bold', mb: 0.5 }}>
@@ -186,7 +187,7 @@ const Dashboard = () => {
         {/* Recent Connections */}
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, height: '100%', boxShadow: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, gap: 20, width: '100%'}}>
               <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Recent Connections</Typography>
               <Button
                 variant="contained"
@@ -229,7 +230,7 @@ const Dashboard = () => {
         {/* Recent Queries */}
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 3, height: '100%', boxShadow: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, gap: 20}}>
               <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Recent Queries</Typography>
               <Button
                 variant="contained"
@@ -271,7 +272,7 @@ const Dashboard = () => {
 
         {/* Tips and Getting Started */}
         <Grid item xs={12}>
-          <Paper sx={{ p: 3, mt: 2, boxShadow: 2 }}>
+          <Paper sx={{ p: 3, mt: 2, boxShadow: 2, width: '97.2%' }}>
             <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold' }}>
               Tips for Getting Started
             </Typography>
