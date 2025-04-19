@@ -35,7 +35,11 @@ const createTestDatabase = async () => {
 
       try {
         // Enable foreign keys
-        await db.runAsync('PRAGMA foreign_keys = ON');
+        await db.runAsync('PRAGMA foreign_keys = OFF');
+
+        // Drop existing tables if they exist
+        await db.runAsync('DROP TABLE IF EXISTS saved_queries');
+        await db.runAsync('DROP TABLE IF EXISTS saved_connections');
 
         // Create saved_connections table
         await db.runAsync(`
@@ -64,6 +68,9 @@ const createTestDatabase = async () => {
             FOREIGN KEY (connection_id) REFERENCES saved_connections(id) ON DELETE SET NULL
           )
         `);
+
+        // Re-enable foreign keys
+        await db.runAsync('PRAGMA foreign_keys = ON');
 
         // Insert test connections
         for (const conn of testConfig.testData.connections) {
