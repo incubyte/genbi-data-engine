@@ -1,6 +1,7 @@
 const logger = require('../../utils/logger');
 const config = require('../../config/config');
 const Anthropic = require('@anthropic-ai/sdk');
+const RetryUtils = require('../../utils/retryUtils');
 
 /**
  * Utility for extracting relevant schema information based on user queries
@@ -20,10 +21,19 @@ class SchemaExtractor {
     this.model = model;
     this.dummyMode = !apiKey || apiKey === 'dummy_key_for_testing';
 
+    // Initialize retry configuration
+    this.retryConfig = anthropicConfig.retry || {
+      maxAttempts: 3,
+      initialDelay: 1000,
+      maxDelay: 10000,
+      backoffMultiplier: 2
+    };
+
     logger.info('SchemaExtractor initialized with Anthropic client', {
       model: this.model,
       dummyMode: this.dummyMode
     });
+    logger.debug('Retry configuration:', this.retryConfig);
   }
 
   /**
@@ -74,19 +84,55 @@ class SchemaExtractor {
           }]
         };
       } else {
-        // Call the real Anthropic API
+        // Call the real Anthropic API with retry mechanism
         try {
-          const apiResponse = await this.anthropicClient.messages.create({
-            model: this.model,
-            max_tokens: 1000,
-            system: systemPrompt,
-            messages: messages,
+          // Create a function that will be retried
+          const makeApiCall = async () => {
+            return await this.anthropicClient.messages.create({
+              model: this.model,
+              max_tokens: 1000,
+              system: systemPrompt,
+              messages: messages,
+            });
+          };
+
+          // Setup retry options
+          const retryOptions = {
+            maxAttempts: this.retryConfig.maxAttempts,
+            initialDelay: this.retryConfig.initialDelay,
+            maxDelay: this.retryConfig.maxDelay,
+            backoffMultiplier: this.retryConfig.backoffMultiplier,
+            retryCondition: RetryUtils.isRetryableError,
+            onRetry: (error, attempt, delay) => {
+              // Log retry information
+              const errorInfo = RetryUtils.categorizeError(error);
+              logger.warn(`Schema extraction API call failed (${errorInfo.category}). Retrying (${attempt}/${this.retryConfig.maxAttempts}) in ${delay}ms`, {
+                errorType: error.type || error.name,
+                errorMessage: error.message,
+                statusCode: error.status || error.statusCode,
+                isRetryable: errorInfo.isRetryable,
+                category: errorInfo.category,
+                description: errorInfo.description
+              });
+            }
+          };
+
+          // Execute the API call with retries
+          response = await RetryUtils.retry(makeApiCall, retryOptions);
+          logger.debug('Received schema extraction response from Anthropic API');
+        } catch (apiError) {
+          // If all retries failed, log the error and fall back to a subset of tables
+          const errorInfo = RetryUtils.categorizeError(apiError);
+          logger.error(`Schema extraction API call failed after ${this.retryConfig.maxAttempts} attempts:`, {
+            errorType: apiError.type || apiError.name,
+            errorMessage: apiError.message,
+            statusCode: apiError.status || apiError.statusCode,
+            isRetryable: errorInfo.isRetryable,
+            category: errorInfo.category,
+            description: errorInfo.description
           });
 
-          response = apiResponse;
-        } catch (apiError) {
-          logger.error('Error calling Anthropic API:', apiError);
-          // Return a mock response in case of API error
+          // Return a fallback response in case of API error
           response = {
             content: [{
               type: 'text',
