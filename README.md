@@ -46,7 +46,8 @@ This project is organized into two main components:
 - Smart data visualization system that automatically selects appropriate chart types
 - Customizable charts with interactive controls
 - Export functionality for query results and visualizations
-- Saved connections and queries management
+- Saved connections, queries, and visualizations management
+- Ability to save visualizations with query results for quick access without re-running queries
 - Responsive design for both desktop and mobile use
 
 ## Installation
@@ -233,7 +234,13 @@ If you don't have an Anthropic API key, the server will run in mock mode, which 
    - Explore automatically generated visualizations
    - Customize charts to better represent your data
    - View the generated SQL query
+   - Save visualizations with query results for future reference
    - Export results to CSV and visualizations to PNG/SVG
+
+4. **Manage Saved Visualizations**:
+   - Access saved visualizations without re-running queries
+   - View and interact with previously saved charts
+   - Delete visualizations you no longer need
 
 ## Error Handling
 

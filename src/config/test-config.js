@@ -90,15 +90,10 @@ const setupTestEnvironment = () => {
  * Cleanup test environment
  */
 const cleanupTestEnvironment = () => {
-  // Remove test database if it exists
-  if (fs.existsSync(testConfig.database.userDataPath)) {
-    try {
-      fs.unlinkSync(testConfig.database.userDataPath);
-      console.log(`Test database removed: ${testConfig.database.userDataPath}`);
-    } catch (error) {
-      console.error(`Error removing test database: ${error.message}`);
-    }
-  }
+  // We don't need to remove the test database here
+  // The database will be properly cleaned up in the next test run
+  // by dropping and recreating the tables
+  console.log('Test environment cleanup complete');
 };
 
 module.exports = {

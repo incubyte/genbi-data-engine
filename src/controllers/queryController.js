@@ -65,7 +65,7 @@ class QueryController {
       } else {
         // Generate SQL query and visualization recommendations using Anthropic for regular queries
         const generatedResponse = await anthropicService.generateSqlQuery(userQuery, schema, dbType, {
-          optimizeSchema: true, 
+          optimizeSchema: true,
           maxTables: 20
         });
         sqlQuery = generatedResponse.sqlQuery;
@@ -154,18 +154,32 @@ class QueryController {
    */
   async saveQuery(req, res, next) {
     try {
-      const { name, query, connection_id } = req.body;
+      const {
+        name,
+        query,
+        connection_id,
+        sql_query,
+        results,
+        chart_type,
+        visualization_config,
+        description
+      } = req.body;
 
       if (!name || !query) {
         throw new ApiError(400, 'Name and query are required');
       }
 
-      logger.info(`Saving new query: ${name}`);
+      logger.info(`Saving new query/visualization: ${name}`);
 
       const savedQuery = await userDataService.saveQuery({
         name,
         query,
-        connection_id
+        connection_id,
+        sql_query,
+        results,
+        chart_type,
+        visualization_config,
+        description
       });
 
       res.status(201).json({

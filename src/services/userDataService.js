@@ -204,13 +204,37 @@ class UserDataService {
 
       const queries = await this.db.allAsync(`
         SELECT q.id, q.name, q.query, q.connection_id, q.created_at,
+               q.sql_query, q.results, q.chart_type, q.visualization_config, q.description,
                c.name as connection_name, c.type as connection_type
         FROM saved_queries q
         LEFT JOIN saved_connections c ON q.connection_id = c.id
         ORDER BY q.created_at DESC
       `);
 
-      return queries;
+      // Parse JSON fields if they exist
+      return queries.map(query => {
+        const parsedQuery = { ...query };
+
+        // Parse results if it exists
+        if (parsedQuery.results) {
+          try {
+            parsedQuery.results = JSON.parse(parsedQuery.results);
+          } catch (parseError) {
+            logger.warn(`Failed to parse results JSON for query ${parsedQuery.id}:`, parseError);
+          }
+        }
+
+        // Parse visualization_config if it exists
+        if (parsedQuery.visualization_config) {
+          try {
+            parsedQuery.visualization_config = JSON.parse(parsedQuery.visualization_config);
+          } catch (parseError) {
+            logger.warn(`Failed to parse visualization_config JSON for query ${parsedQuery.id}:`, parseError);
+          }
+        }
+
+        return parsedQuery;
+      });
     } catch (error) {
       logger.error('Error getting saved queries:', error);
       throw new ApiError(500, `Failed to get saved queries: ${error.message}`);
@@ -230,6 +254,7 @@ class UserDataService {
 
       const query = await this.db.getAsync(`
         SELECT q.id, q.name, q.query, q.connection_id, q.created_at,
+               q.sql_query, q.results, q.chart_type, q.visualization_config, q.description,
                c.name as connection_name, c.type as connection_type
         FROM saved_queries q
         LEFT JOIN saved_connections c ON q.connection_id = c.id
@@ -238,6 +263,23 @@ class UserDataService {
 
       if (!query) {
         throw new ApiError(404, `Query with ID ${id} not found`);
+      }
+
+      // Parse JSON fields if they exist
+      if (query.results) {
+        try {
+          query.results = JSON.parse(query.results);
+        } catch (parseError) {
+          logger.warn(`Failed to parse results JSON for query ${id}:`, parseError);
+        }
+      }
+
+      if (query.visualization_config) {
+        try {
+          query.visualization_config = JSON.parse(query.visualization_config);
+        } catch (parseError) {
+          logger.warn(`Failed to parse visualization_config JSON for query ${id}:`, parseError);
+        }
       }
 
       return query;
@@ -256,19 +298,33 @@ class UserDataService {
    * @param {string} queryData.name - Query name
    * @param {string} queryData.query - Query text
    * @param {string} [queryData.connection_id] - Associated connection ID (optional)
+   * @param {string} [queryData.sql_query] - Generated SQL query
+   * @param {Object} [queryData.results] - Query results
+   * @param {string} [queryData.chart_type] - Chart type (bar, line, pie)
+   * @param {Object} [queryData.visualization_config] - Visualization configuration
+   * @param {string} [queryData.description] - Visualization description
    * @returns {Promise<Object>} - Saved query
    */
   async saveQuery(queryData) {
     await this.ensureInitialized();
 
     try {
-      const { name, query, connection_id } = queryData;
+      const {
+        name,
+        query,
+        connection_id,
+        sql_query,
+        results,
+        chart_type,
+        visualization_config,
+        description
+      } = queryData;
 
       if (!name || !query) {
         throw new ApiError(400, 'Name and query are required');
       }
 
-      logger.info(`Saving new query: ${name}`);
+      logger.info(`Saving new query/visualization: ${name}`);
 
       // If connection_id is provided, check if it exists
       if (connection_id) {
@@ -285,9 +341,19 @@ class UserDataService {
       const id = uuidv4();
       const now = new Date().toISOString();
 
+      // Stringify JSON fields
+      const resultsStr = results ? JSON.stringify(results) : null;
+      const visualizationConfigStr = visualization_config ? JSON.stringify(visualization_config) : null;
+
       await this.db.runAsync(
-        'INSERT INTO saved_queries (id, name, query, connection_id, created_at) VALUES (?, ?, ?, ?, ?)',
-        [id, name, query, connection_id || null, now]
+        `INSERT INTO saved_queries (
+          id, name, query, connection_id, sql_query, results,
+          chart_type, visualization_config, description, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          id, name, query, connection_id || null, sql_query || null,
+          resultsStr, chart_type || null, visualizationConfigStr, description || null, now
+        ]
       );
 
       // Get the saved query with connection details

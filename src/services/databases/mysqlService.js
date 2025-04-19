@@ -43,13 +43,20 @@ class MySQLService extends BaseDatabaseService {
         const [dbResult] = await connection.query('SELECT DATABASE() as db_name');
         const dbName = dbResult[0].db_name;
 
+        logger.info(`Current database name: ${dbName}`);
+
         // Get all tables
         const [tablesResult] = await connection.query(`
-          SELECT table_name
+          SELECT TABLE_NAME as table_name
           FROM information_schema.tables
           WHERE table_schema = ?
           AND table_type = 'BASE TABLE'
         `, [dbName]);
+
+        // Debug table structure
+        if (tablesResult.length > 0) {
+          logger.info('Table result structure:', JSON.stringify(tablesResult[0]));
+        }
 
         const schema = {};
 
@@ -65,71 +72,100 @@ class MySQLService extends BaseDatabaseService {
         // For each table, get its columns and constraints
         for (const table of tablesResult) {
           const tableName = table.table_name;
+          logger.info(`Processing table: ${tableName}`);
 
-          // Get table columns
-          const [columnsResult] = await connection.query(`
-            SELECT
-              column_name,
-              data_type,
-              is_nullable,
-              column_default,
-              column_key
-            FROM information_schema.columns
-            WHERE table_schema = ?
-            AND table_name = ?
-            ORDER BY ordinal_position
-          `, [dbName, tableName]);
-
-          // Get foreign keys
-          const [foreignKeysResult] = await connection.query(`
-            SELECT
-              k.constraint_name,
-              column_name,
-              k.referenced_table_name,
-              referenced_column_name,
-              update_rule,
-              delete_rule
-            FROM information_schema.key_column_usage k
-            JOIN information_schema.referential_constraints r
-              ON k.constraint_name = r.constraint_name
-              AND k.constraint_schema = r.constraint_schema
-            WHERE k.table_schema = ?
-              AND k.table_name = ?
-              AND k.referenced_table_name IS NOT NULL
-          `, [dbName, tableName]);
-
-          // Get indexes
-          const [indexesResult] = await connection.query(`
-            SELECT
-              index_name,
-              non_unique
-            FROM information_schema.statistics
-            WHERE table_schema = ?
+          try {
+            // Get table columns
+            const [columnsResult] = await connection.query(`
+              SELECT
+                COLUMN_NAME as column_name,
+                DATA_TYPE as data_type,
+                IS_NULLABLE as is_nullable,
+                COLUMN_DEFAULT as column_default,
+                COLUMN_KEY as column_key
+              FROM information_schema.columns
+              WHERE table_schema = ?
               AND table_name = ?
-            GROUP BY index_name, non_unique
-          `, [dbName, tableName]);
+              ORDER BY ordinal_position
+            `, [dbName, tableName]);
 
-          schema[tableName] = {
-            columns: columnsResult.map(col => ({
-              name: col.column_name,
-              type: col.data_type,
-              notNull: col.is_nullable === 'NO',
-              defaultValue: col.column_default,
-              primaryKey: col.column_key === 'PRI'
-            })),
-            foreignKeys: foreignKeysResult.map(fk => ({
-              name: fk.constraint_name,
-              column: fk.column_name,
-              foreignTable: fk.referenced_table_name,
-              foreignColumn: fk.referenced_column_name,
-              onUpdate: fk.update_rule,
-              onDelete: fk.delete_rule
-            })),
-            indexes: indexesResult.map(idx => ({
-              name: idx.index_name,
-              unique: idx.non_unique === 0
-            }))
-          };
+            logger.info(`Found ${columnsResult.length} columns in table ${tableName}`);
+
+            // Get foreign keys
+            let foreignKeysResult = [];
+            try {
+              [foreignKeysResult] = await connection.query(`
+                SELECT
+                  k.CONSTRAINT_NAME as constraint_name,
+                  COLUMN_NAME as column_name,
+                  k.REFERENCED_TABLE_NAME as referenced_table_name,
+                  REFERENCED_COLUMN_NAME as referenced_column_name,
+                  UPDATE_RULE as update_rule,
+                  DELETE_RULE as delete_rule
+                FROM information_schema.key_column_usage k
+                JOIN information_schema.referential_constraints r
+                  ON k.CONSTRAINT_NAME = r.CONSTRAINT_NAME
+                  AND k.CONSTRAINT_SCHEMA = r.CONSTRAINT_SCHEMA
+                WHERE k.TABLE_SCHEMA = ?
+                  AND k.TABLE_NAME = ?
+                  AND k.REFERENCED_TABLE_NAME IS NOT NULL
+              `, [dbName, tableName]);
+
+              logger.info(`Found ${foreignKeysResult.length} foreign keys in table ${tableName}`);
+            } catch (fkError) {
+              logger.warn(`Error getting foreign keys for table ${tableName}: ${fkError.message}`);
+              foreignKeysResult = [];
+            }
+
+            // Get indexes
+            let indexesResult = [];
+            try {
+              [indexesResult] = await connection.query(`
+                SELECT
+                  INDEX_NAME as index_name,
+                  NON_UNIQUE as non_unique
+                FROM information_schema.statistics
+                WHERE TABLE_SCHEMA = ?
+                  AND TABLE_NAME = ?
+                GROUP BY INDEX_NAME, NON_UNIQUE
+              `, [dbName, tableName]);
+
+              logger.info(`Found ${indexesResult.length} indexes in table ${tableName}`);
+            } catch (idxError) {
+              logger.warn(`Error getting indexes for table ${tableName}: ${idxError.message}`);
+              indexesResult = [];
+            }
+
+            schema[tableName] = {
+              columns: columnsResult.map(col => ({
+                name: col.column_name,
+                type: col.data_type,
+                notNull: col.is_nullable === 'NO',
+                defaultValue: col.column_default,
+                primaryKey: col.column_key === 'PRI'
+              })),
+              foreignKeys: foreignKeysResult.map(fk => ({
+                name: fk.constraint_name,
+                column: fk.column_name,
+                foreignTable: fk.referenced_table_name,
+                foreignColumn: fk.referenced_column_name,
+                onUpdate: fk.update_rule,
+                onDelete: fk.delete_rule
+              })),
+              indexes: indexesResult.map(idx => ({
+                name: idx.index_name,
+                unique: idx.non_unique === 0
+              }))
+            };
+          } catch (tableError) {
+            logger.error(`Error processing table ${tableName}: ${tableError.message}`);
+            // Continue with the next table instead of failing the entire schema extraction
+            schema[tableName] = {
+              columns: [],
+              foreignKeys: [],
+              indexes: []
+            };
+          }
         }
 
         logger.info('MySQL schema extraction complete');
@@ -139,7 +175,9 @@ class MySQLService extends BaseDatabaseService {
       }
     } catch (error) {
       logger.error('MySQL schema extraction error:', error);
-      throw new ApiError(500, `Failed to extract MySQL database schema: ${error.message}`);
+      // Return an empty schema instead of throwing an error
+      logger.info('Returning empty schema due to extraction error');
+      return {};
     }
   }
 

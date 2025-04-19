@@ -32,7 +32,8 @@ const SmartChart = ({
   data,
   initialChartType = null,
   recommendedConfig = null,
-  recommendationReason = null
+  recommendationReason = null,
+  onChartChange = null
 }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -102,12 +103,20 @@ const SmartChart = ({
     const newChartConfig = analysis?.recommendedCharts?.find(chart => chart.type === newType)?.config;
     if (newChartConfig) {
       setChartConfig(newChartConfig);
+      // Notify parent component about chart change if callback provided
+      if (onChartChange) {
+        onChartChange(newType, newChartConfig);
+      }
     }
   };
 
   // Handle chart config change
   const handleConfigChange = (newConfig) => {
     setChartConfig(newConfig);
+    // Notify parent component about config change if callback provided
+    if (onChartChange) {
+      onChartChange(chartType, newConfig);
+    }
   };
 
   // Get color based on suitability rating
@@ -299,7 +308,8 @@ SmartChart.propTypes = {
   data: PropTypes.array.isRequired,
   initialChartType: PropTypes.oneOf(['bar', 'line', 'pie']),
   recommendedConfig: PropTypes.object,
-  recommendationReason: PropTypes.string
+  recommendationReason: PropTypes.string,
+  onChartChange: PropTypes.func
 };
 
 export default SmartChart;
