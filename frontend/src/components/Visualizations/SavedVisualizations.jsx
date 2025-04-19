@@ -72,22 +72,44 @@ const SavedVisualizations = () => {
         if (result.success) {
           // Filter queries that have visualization data
           const visualizationQueries = result.data.filter(query =>
-            query.chart_type && query.visualization_config
+            query.chart_type
           );
 
           // Map to visualization format
-          const mappedVisualizations = visualizationQueries.map(query => ({
-            id: query.id,
-            title: query.name,
-            description: query.description || `Visualization for: ${query.query}`,
-            type: query.chart_type,
-            createdAt: query.created_at,
-            query: query.query,
-            sql_query: query.sql_query,
-            results: query.results,
-            visualization_config: query.visualization_config,
-            thumbnailUrl: defaultThumbnails[query.chart_type] || defaultThumbnails.default
-          }));
+          const mappedVisualizations = visualizationQueries.map(query => {
+            // Parse JSON fields if they're strings
+            let parsedResults = query.results;
+            let parsedConfig = query.visualization_config;
+
+            try {
+              if (query.results && typeof query.results === 'string') {
+                parsedResults = JSON.parse(query.results);
+              }
+            } catch (err) {
+              console.warn(`Failed to parse results for query ${query.id}:`, err);
+            }
+
+            try {
+              if (query.visualization_config && typeof query.visualization_config === 'string') {
+                parsedConfig = JSON.parse(query.visualization_config);
+              }
+            } catch (err) {
+              console.warn(`Failed to parse visualization_config for query ${query.id}:`, err);
+            }
+
+            return {
+              id: query.id,
+              title: query.name,
+              description: query.description || `Visualization for: ${query.query}`,
+              type: query.chart_type,
+              createdAt: query.created_at,
+              query: query.query,
+              sql_query: query.sql_query,
+              results: parsedResults,
+              visualization_config: parsedConfig,
+              thumbnailUrl: defaultThumbnails[query.chart_type] || defaultThumbnails.default
+            };
+          });
 
           setVisualizations(mappedVisualizations);
         } else {
@@ -165,15 +187,39 @@ const SavedVisualizations = () => {
 
   // Handle view visualization
   const handleViewVisualization = (visualization) => {
+    // Ensure visualization_config is properly formatted
+    let visualizationConfig = visualization.visualization_config;
+
+    // If it's a string, try to parse it
+    if (typeof visualizationConfig === 'string') {
+      try {
+        visualizationConfig = JSON.parse(visualizationConfig);
+      } catch (err) {
+        console.warn(`Failed to parse visualization_config for visualization ${visualization.id}:`, err);
+      }
+    }
+
+    // Ensure results is properly formatted
+    let results = visualization.results;
+
+    // If it's a string, try to parse it
+    if (typeof results === 'string') {
+      try {
+        results = JSON.parse(results);
+      } catch (err) {
+        console.warn(`Failed to parse results for visualization ${visualization.id}:`, err);
+      }
+    }
+
     // Navigate to results page with the saved visualization data
     navigate('/results', {
       state: {
         results: {
-          results: visualization.results,
+          results: results,
           sqlQuery: visualization.sql_query,
           userQuery: visualization.query,
           databaseType: 'saved', // Indicate this is a saved visualization
-          visualization: visualization.visualization_config
+          visualization: visualizationConfig
         }
       }
     });

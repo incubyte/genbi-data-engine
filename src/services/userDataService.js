@@ -204,14 +204,37 @@ class UserDataService {
 
       const queries = await this.db.allAsync(`
         SELECT q.id, q.name, q.query, q.connection_id, q.created_at,
-               q.sql_query, q.chart_type, q.description,
+               q.sql_query, q.results, q.chart_type, q.visualization_config, q.description,
                c.name as connection_name, c.type as connection_type
         FROM saved_queries q
         LEFT JOIN saved_connections c ON q.connection_id = c.id
         ORDER BY q.created_at DESC
       `);
 
-      return queries;
+      // Parse JSON fields if they exist
+      return queries.map(query => {
+        const parsedQuery = { ...query };
+
+        // Parse results if it exists
+        if (parsedQuery.results) {
+          try {
+            parsedQuery.results = JSON.parse(parsedQuery.results);
+          } catch (parseError) {
+            logger.warn(`Failed to parse results JSON for query ${parsedQuery.id}:`, parseError);
+          }
+        }
+
+        // Parse visualization_config if it exists
+        if (parsedQuery.visualization_config) {
+          try {
+            parsedQuery.visualization_config = JSON.parse(parsedQuery.visualization_config);
+          } catch (parseError) {
+            logger.warn(`Failed to parse visualization_config JSON for query ${parsedQuery.id}:`, parseError);
+          }
+        }
+
+        return parsedQuery;
+      });
     } catch (error) {
       logger.error('Error getting saved queries:', error);
       throw new ApiError(500, `Failed to get saved queries: ${error.message}`);
