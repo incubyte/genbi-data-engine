@@ -2,6 +2,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const IAnthropicClient = require('./iAnthropicClient');
 const logger = require('../../../utils/logger');
 const { ApiError } = require('../../../utils/errorHandler');
+const RetryUtils = require('../../../utils/retryUtils');
 
 /**
  * Real implementation of the Anthropic API client
@@ -32,7 +33,17 @@ class RealAnthropicClient extends IAnthropicClient {
     }
 
     this.model = config.model || 'claude-3-opus-20240229';
+
+    // Initialize retry configuration
+    this.retryConfig = config.retry || {
+      maxAttempts: 3,
+      initialDelay: 1000,
+      maxDelay: 10000,
+      backoffMultiplier: 2
+    };
+
     logger.info(`RealAnthropicClient initialized with model: ${this.model}`);
+    logger.debug('Retry configuration:', this.retryConfig);
   }
 
   /**
@@ -81,53 +92,120 @@ class RealAnthropicClient extends IAnthropicClient {
         };
       }
 
-      let response;
+      // Use the retry utility to handle retries with exponential backoff
       try {
-        response = await this.client.messages.create({
-          model: this.model,
-          max_tokens: maxTokens,
-          system: systemPrompt,
-          messages: messages,
-        });
-      } catch (apiError) {
-        // If we get an authentication error, switch to dummy mode
-        if (apiError.status === 401) {
-          logger.warn('Authentication error with Anthropic API. Switching to dummy mode.');
-          this.dummyMode = true;
+        // Create a function that will be retried
+        const makeApiCall = async () => {
+          try {
+            return await this.client.messages.create({
+              model: this.model,
+              max_tokens: maxTokens,
+              system: systemPrompt,
+              messages: messages,
+            });
+          } catch (apiError) {
+            // If we get an authentication error, switch to dummy mode immediately (don't retry)
+            if (apiError.status === 401) {
+              logger.warn('Authentication error with Anthropic API. Switching to dummy mode.');
+              this.dummyMode = true;
 
-          // Extract the user query from the messages
-          const userQuery = messages.find(m => m.role === 'user')?.content || '';
+              // Extract the user query from the messages
+              const userQuery = messages.find(m => m.role === 'user')?.content || '';
 
-          // Generate a SQL query and visualization recommendations based on the schema in the system prompt
-          let response = this.generateResponseFromSchema(userQuery, systemPrompt);
+              // Generate a SQL query and visualization recommendations based on the schema in the system prompt
+              let response = this.generateResponseFromSchema(userQuery, systemPrompt);
 
-          // Return a response object that mimics the Anthropic API response structure
-          return {
-            id: `dummy-${Date.now()}`,
-            type: 'message',
-            role: 'assistant',
-            model: this.model,
-            content: [
-              {
-                type: 'text',
-                text: response
-              }
-            ],
-            usage: {
-              input_tokens: 100,
-              output_tokens: 50
+              // Return a response object that mimics the Anthropic API response structure
+              return {
+                id: `dummy-${Date.now()}`,
+                type: 'message',
+                role: 'assistant',
+                model: this.model,
+                content: [
+                  {
+                    type: 'text',
+                    text: response
+                  }
+                ],
+                usage: {
+                  input_tokens: 100,
+                  output_tokens: 50
+                }
+              };
             }
-          };
-        } else {
-          // Re-throw other errors
-          throw apiError;
-        }
-      }
 
-      logger.debug('Received response from Anthropic API');
-      return response;
+            // For other errors, throw them to be handled by the retry mechanism
+            throw apiError;
+          }
+        };
+
+        // Setup retry options
+        const retryOptions = {
+          maxAttempts: this.retryConfig.maxAttempts,
+          initialDelay: this.retryConfig.initialDelay,
+          maxDelay: this.retryConfig.maxDelay,
+          backoffMultiplier: this.retryConfig.backoffMultiplier,
+          retryCondition: RetryUtils.isRetryableError,
+          onRetry: (error, attempt, delay) => {
+            // Log retry information
+            const errorInfo = RetryUtils.categorizeError(error);
+            logger.warn(`Anthropic API call failed (${errorInfo.category}). Retrying (${attempt}/${this.retryConfig.maxAttempts}) in ${delay}ms`, {
+              errorType: error.type || error.name,
+              errorMessage: error.message,
+              statusCode: error.status || error.statusCode,
+              isRetryable: errorInfo.isRetryable,
+              category: errorInfo.category,
+              description: errorInfo.description
+            });
+          }
+        };
+
+        // Execute the API call with retries
+        const response = await RetryUtils.retry(makeApiCall, retryOptions);
+        logger.debug('Received response from Anthropic API');
+        return response;
+      } catch (error) {
+        // If all retries failed, enhance the error and throw it
+        const errorInfo = RetryUtils.categorizeError(error);
+        logger.error(`Anthropic API call failed after ${this.retryConfig.maxAttempts} attempts:`, {
+          errorType: error.type || error.name,
+          errorMessage: error.message,
+          statusCode: error.status || error.statusCode,
+          isRetryable: errorInfo.isRetryable,
+          category: errorInfo.category,
+          description: errorInfo.description
+        });
+
+        // Enhance error with more context
+        if (error.status && error.status >= 400) {
+          throw new ApiError(
+            500,
+            `Anthropic API error after ${this.retryConfig.maxAttempts} retry attempts: ${error.message}`,
+            false,
+            error.stack,
+            {
+              status: error.status,
+              type: error.type,
+              model: this.model,
+              retryAttempts: this.retryConfig.maxAttempts,
+              errorCategory: errorInfo.category
+            }
+          );
+        }
+
+        throw new ApiError(
+          500,
+          `Failed to generate response from Anthropic after ${this.retryConfig.maxAttempts} retry attempts: ${error.message}`,
+          false,
+          error.stack,
+          {
+            errorCategory: errorInfo.category,
+            retryAttempts: this.retryConfig.maxAttempts
+          }
+        );
+      }
     } catch (error) {
-      logger.error('Error calling Anthropic API:', error);
+      logger.error('Error in generateResponse:', error);
 
       // Enhance error with more context
       if (error.status && error.status >= 400) {

@@ -103,6 +103,7 @@ For the visualization recommendations:
       return `
 - Generate SQL that works with PostgreSQL
 - You can use PostgreSQL-specific features when appropriate
+- Make sure that if the column names are enclosed in double quotes in the generated SQL
 - Use $1, $2, etc. for parameterized queries in PostgreSQL`;
     } else if (dbType === 'mysql') {
       return `

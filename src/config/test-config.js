@@ -20,7 +20,14 @@ const testConfig = {
   api: {
     anthropic: {
       apiKey: 'test_api_key',
-      model: 'claude-3-opus-20240229'
+      model: 'claude-3-opus-20240229',
+      // Retry configuration for testing
+      retry: {
+        maxAttempts: 2,
+        initialDelay: 100,
+        maxDelay: 500,
+        backoffMultiplier: 2
+      }
     }
   },
 
