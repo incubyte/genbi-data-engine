@@ -21,7 +21,9 @@
     "test:sqlite": "npm run setup-sqlite-db && npm run test-query",
     "test:postgres": "npm run setup-postgres-db && npm run test-query",
     "test:mysql": "npm run setup-mysql-db && npm run test-query",
-    "migrate": "node src/db/migrations/run-migrations.js"
+    "migrate": "node src/db/migrations/run-migrations.js",
+    "verify-db": "node verify-db.js",
+    "postinstall": "mkdir -p data logs"
   },
   "keywords": [],
   "author": "",

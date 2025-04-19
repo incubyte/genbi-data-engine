@@ -1,0 +1,44 @@
+# Node modules
+node_modules
+frontend/node_modules
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# SQLite database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Test files
+coverage
+.nyc_output
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Git files
+.git
+.gitignore
+
+# Editor files
+.vscode
+.idea
+
+# Build files
+frontend/dist
+frontend/build
+
+# Documentation
+docs
+*.md
+!README.md
+!DEPLOYMENT.md

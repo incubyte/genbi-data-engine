@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: genbi-data-engine
+    env: node
+    buildCommand: |
+      npm ci
+      cd frontend && npm ci && npm run build && cd ..
+      mkdir -p data logs
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        value: claude-3-7-sonnet-20250219
+      - key: LOG_LEVEL
+        value: info
+      - key: CORS_ORIGINS
+        value: https://${RENDER_EXTERNAL_HOSTNAME}
+    disk:
+      name: data
+      mountPath: /app/data
+      sizeGB: 1
+      # Ensure the disk is created before the service starts
+      # This is important for database initialization

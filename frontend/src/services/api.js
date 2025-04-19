@@ -1,9 +1,11 @@
 import axios from 'axios';
 
 // Configure the API URL based on the environment
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+// In production, we can use relative URLs since the backend serves the frontend
+const API_URL = import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? '/api' : 'http://localhost:3000/api');
 
-console.log('Using API URL:', API_URL);
+console.log('Using API URL:', API_URL, 'Environment:', import.meta.env.MODE);
 
 // Configure Axios defaults
 axios.defaults.headers.common['Content-Type'] = 'application/json';

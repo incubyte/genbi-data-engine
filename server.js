@@ -1,6 +1,7 @@
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
+const path = require('path');
 const logger = require('./src/utils/logger');
 const config = require('./src/config/config');
 const { errorHandler, setupErrorHandlers } = require('./src/utils/errorHandler');
@@ -77,7 +78,7 @@ const corsOptions = {
     if (!origin) return callback(null, true);
 
     // Check if the origin is allowed
-    const allowedOrigins = serverConfig.corsOrigins || ['http://localhost:5173', 'http://127.0.0.1:5173'];
+    const allowedOrigins = serverConfig.corsOrigins || ['http://localhost:5173', 'http://127.0.0.1:5173', 'https://preview--genbi-data-explorer.lovable.app/'];
     if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -103,8 +104,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
-app.get('/', (req, res) => {
+// API Routes
+app.get('/api', (req, res) => {
   res.status(200).json({
     status: 'success',
     message: 'Welcome to the GenBI Data Engine API',
@@ -137,13 +138,35 @@ app.get('/api/saved-queries/:id', queryController.getQueryById);
 app.post('/api/saved-queries', queryController.saveQuery);
 app.delete('/api/saved-queries/:id', queryController.deleteQuery);
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    status: 'error',
-    message: `Route ${req.originalUrl} not found`,
+// Serve static frontend files in production
+if (process.env.NODE_ENV === 'production') {
+  logger.info('Running in production mode, serving static frontend files');
+
+  // Set static folder
+  app.use(express.static(path.join(__dirname, 'frontend/dist')));
+
+  // Any routes not matching API will be redirected to index.html
+  app.get('*', (req, res) => {
+    // Skip API routes
+    if (req.originalUrl.startsWith('/api')) {
+      return res.status(404).json({
+        status: 'error',
+        message: `API route ${req.originalUrl} not found`,
+      });
+    }
+
+    // Serve the frontend for all other routes
+    res.sendFile(path.resolve(__dirname, 'frontend', 'dist', 'index.html'));
   });
-});
+} else {
+  // 404 handler for development mode
+  app.use((req, res) => {
+    res.status(404).json({
+      status: 'error',
+      message: `Route ${req.originalUrl} not found`,
+    });
+  });
+}
 
 // Error handling middleware
 app.use(errorHandler);
@@ -157,6 +180,23 @@ if (require.main === module) {
   app.listen(port, () => {
     logger.info(`Server running on port ${port}`);
     logger.info(`Environment: ${serverConfig.env}`);
-    logger.info(`API URL: http://localhost:${port}/api`);
+
+    // Log different information based on environment
+    if (process.env.NODE_ENV === 'production') {
+      logger.info(`Deployment platform: ${process.env.RENDER ? 'Render' : 'Unknown'}`);
+      logger.info(`Render service ID: ${process.env.RENDER_SERVICE_ID || 'Not available'}`);
+      logger.info(`Render instance ID: ${process.env.RENDER_INSTANCE_ID || 'Not available'}`);
+      logger.info(`API URL: ${process.env.RENDER_EXTERNAL_URL ? process.env.RENDER_EXTERNAL_URL + '/api' : 'Not available'}`);
+
+      // Log database information
+      const dbConfig = config.getDatabaseConfig();
+      logger.info(`Database path: ${dbConfig.userDataPath}`);
+
+      // Log system information
+      logger.info(`Node.js version: ${process.version}`);
+      logger.info(`Memory usage: ${JSON.stringify(process.memoryUsage())}`);
+    } else {
+      logger.info(`API URL: http://localhost:${port}/api`);
+    }
   });
 }
