@@ -41,7 +41,7 @@ describe('RealAnthropicClient', () => {
 
     mockConfig = {
       apiKey: 'test_api_key',
-      model: 'claude-3-opus-20240229',
+      model: 'claude-3-7-sonnet-20250219',
       retry: {
         maxAttempts: 3,
         initialDelay: 100,
@@ -54,7 +54,7 @@ describe('RealAnthropicClient', () => {
       id: 'test-id',
       type: 'message',
       role: 'assistant',
-      model: 'claude-3-opus-20240229',
+      model: 'claude-3-7-sonnet-20250219',
       content: [
         {
           type: 'text',
@@ -91,7 +91,7 @@ describe('RealAnthropicClient', () => {
     test('should use default retry config if not provided', () => {
       const clientWithoutRetryConfig = new RealAnthropicClient({
         apiKey: 'test_api_key',
-        model: 'claude-3-opus-20240229'
+        model: 'claude-3-7-sonnet-20250219'
       });
 
       expect(clientWithoutRetryConfig.retryConfig).toEqual({
@@ -104,7 +104,7 @@ describe('RealAnthropicClient', () => {
 
     test('should initialize in dummy mode if no API key is provided', () => {
       const dummyClient = new RealAnthropicClient({
-        model: 'claude-3-opus-20240229'
+        model: 'claude-3-7-sonnet-20250219'
       });
 
       expect(dummyClient.dummyMode).toBe(true);

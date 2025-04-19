@@ -47,7 +47,7 @@ class AnthropicServiceFactory {
     // Extract Anthropic config from the config object
     const anthropicConfig = config.api ? config.api.anthropic : (config.anthropic || {});
     const apiKey = anthropicConfig.apiKey;
-    const model = anthropicConfig.model || 'claude-3-opus-20240229';
+    const model = anthropicConfig.model || 'claude-3-7-sonnet-20250219';
 
     // Determine if we should use mock mode
     // If forceRealMode is true, we'll use the real client even if the API key is not provided

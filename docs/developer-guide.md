@@ -69,7 +69,7 @@ The application follows these key design principles:
    PORT=3000
    NODE_ENV=development
    ANTHROPIC_API_KEY=your_anthropic_api_key
-   ANTHROPIC_MODEL=claude-3-opus-20240229
+   ANTHROPIC_MODEL=claude-3-7-sonnet-20250219
    LOG_LEVEL=debug
    ```
 
@@ -415,7 +415,7 @@ To deploy the application to production:
    NODE_ENV=production
    PORT=3000
    ANTHROPIC_API_KEY=your_anthropic_api_key
-   ANTHROPIC_MODEL=claude-3-opus-20240229
+   ANTHROPIC_MODEL=claude-3-7-sonnet-20250219
    LOG_LEVEL=info
    ```
 

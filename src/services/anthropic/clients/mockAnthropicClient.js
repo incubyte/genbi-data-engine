@@ -13,7 +13,7 @@ class MockAnthropicClient extends IAnthropicClient {
    */
   constructor(config = {}) {
     super();
-    this.model = config.model || 'claude-3-opus-20240229';
+    this.model = config.model || 'claude-3-7-sonnet-20250219';
     logger.info(`MockAnthropicClient initialized with model: ${this.model}`);
   }
 

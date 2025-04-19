@@ -27,7 +27,7 @@ class ConfigService {
       api: {
         anthropic: {
           apiKey: process.env.ANTHROPIC_API_KEY || 'your_anthropic_api_key_here',
-          model: process.env.ANTHROPIC_MODEL || 'claude-3-opus-20240229',
+          model: process.env.ANTHROPIC_MODEL || 'claude-3-7-sonnet-20250219',
           // Retry configuration
           retry: {
             maxAttempts: parseInt(process.env.ANTHROPIC_RETRY_MAX_ATTEMPTS || '3'),

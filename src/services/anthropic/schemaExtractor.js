@@ -12,7 +12,7 @@ class SchemaExtractor {
     // Create a dedicated Anthropic client for schema extraction
     const anthropicConfig = config.getConfig().api?.anthropic || {};
     const apiKey = anthropicConfig.apiKey || 'dummy_key_for_testing';
-    const model = anthropicConfig.model || 'claude-3-opus-20240229';
+    const model = anthropicConfig.model || 'claude-3-7-sonnet-20250219';
 
     this.anthropicClient = new Anthropic({
       apiKey: apiKey

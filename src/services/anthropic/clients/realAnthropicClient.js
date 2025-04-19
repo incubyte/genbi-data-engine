@@ -32,7 +32,7 @@ class RealAnthropicClient extends IAnthropicClient {
       this.dummyMode = false;
     }
 
-    this.model = config.model || 'claude-3-opus-20240229';
+    this.model = config.model || 'claude-3-7-sonnet-20250219';
 
     // Initialize retry configuration
     this.retryConfig = config.retry || {
