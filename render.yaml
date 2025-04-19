@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: sqlite-express-api
+    runtime: node
+    buildCommand: "npm install && npm run init-db"
+    startCommand: "npm start"
+    plan: free

@@ -1,27 +1,10 @@
 const sqlite3 = require('sqlite3').verbose();
 const { promisify } = require('util');
-const fs = require('fs');
 const path = require('path');
 
-// Database file path
-const dbPath = path.join(__dirname, 'test.db');
+const dbPath = path.join(__dirname, 'mydatabase.db');
+const db = new sqlite3.Database(dbPath);
 
-// Remove existing database file if it exists
-if (fs.existsSync(dbPath)) {
-  fs.unlinkSync(dbPath);
-  console.log('Removed existing database file');
-}
-
-// Create a new database
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Error creating database:', err.message);
-    process.exit(1);
-  }
-  console.log('Connected to the SQLite database');
-});
-
-// Promisify run method
 const runAsync = promisify(db.run).bind(db);
 
 // Create tables and insert sample data
